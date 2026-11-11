@@ -1,0 +1,1382 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FNIRSI DPS-150 · 数控电源控制台</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpolygon points='16,2 29,9 29,23 16,30 3,23 3,9' fill='none' stroke='%2300e5ff' stroke-width='2'/%3E%3Cpolygon points='16,8 16,16 11,16 17,26 17,18 22,18' fill='%2300e5ff'/%3E%3C/svg%3E">
+<style>
+:root{
+  --bg:#04070d;
+  --panel:rgba(8,20,34,.72);
+  --panel2:rgba(10,26,44,.85);
+  --line:rgba(0,229,255,.22);
+  --line-hi:rgba(0,229,255,.55);
+  --cyan:#00e5ff;
+  --cyan-dim:#0aa7c2;
+  --green:#00ffa3;
+  --amber:#ffb300;
+  --red:#ff3d5a;
+  --violet:#8f7bff;
+  --txt:#c9e7f5;
+  --txt-dim:#5f8ba1;
+  --mono:'Consolas','Courier New',monospace;
+  --ui:'Segoe UI','Microsoft YaHei',system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  background:var(--bg);color:var(--txt);font-family:var(--ui);font-size:13px;
+  overflow:hidden;display:flex;flex-direction:column;
+}
+/* ---------- background fx ---------- */
+#bgfx{position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(ellipse 80% 60% at 70% -10%,rgba(0,120,180,.14),transparent 60%),
+    radial-gradient(ellipse 60% 50% at 10% 110%,rgba(0,255,163,.05),transparent 60%),
+    linear-gradient(rgba(0,229,255,.035) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,229,255,.035) 1px,transparent 1px);
+  background-size:auto,auto,44px 44px,44px 44px;
+}
+#scanfx{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.5;
+  background:repeating-linear-gradient(0deg,transparent 0 3px,rgba(0,0,0,.12) 3px 4px)}
+#sweepline{position:fixed;left:0;right:0;height:90px;z-index:0;pointer-events:none;
+  background:linear-gradient(180deg,transparent,rgba(0,229,255,.05),transparent);
+  animation:sweep 9s linear infinite}
+@keyframes sweep{from{top:-90px}to{top:100%}}
+
+/* ---------- layout ---------- */
+header,nav,main,footer{position:relative;z-index:1}
+header{
+  min-height:58px;display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;padding:8px 16px;
+  background:linear-gradient(180deg,rgba(10,28,48,.9),rgba(6,15,26,.85));
+  border-bottom:1px solid var(--line);
+}
+#logo{display:flex;align-items:center;gap:10px;white-space:nowrap}
+#logo svg{filter:drop-shadow(0 0 6px rgba(0,229,255,.7))}
+#logo .t1{font-size:16px;font-weight:700;letter-spacing:2px;color:#e8fbff;text-shadow:0 0 12px rgba(0,229,255,.55)}
+#logo .t2{font-size:10px;letter-spacing:4px;color:var(--txt-dim)}
+#connbar{display:flex;align-items:center;gap:8px;flex:1;min-width:0;flex-wrap:wrap}
+#statuspill{
+  display:flex;align-items:center;gap:7px;padding:5px 12px;font-size:12px;letter-spacing:1px;
+  border:1px solid var(--line);background:rgba(0,20,35,.6);clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px);
+  white-space:nowrap;
+}
+#statuspill .led{width:9px;height:9px;border-radius:50%;background:#39536a;box-shadow:none}
+#statuspill.on .led{background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 1.6s ease infinite}
+#statuspill.linking .led{background:var(--amber);box-shadow:0 0 8px var(--amber);animation:pulse .6s ease infinite}
+#statuspill.err .led{background:var(--red);box-shadow:0 0 8px var(--red)}
+@keyframes pulse{50%{opacity:.35}}
+#clock{font-family:var(--mono);font-size:13px;color:var(--txt-dim);letter-spacing:1px;white-space:nowrap}
+
+#body{flex:1;display:flex;min-height:0}
+nav{
+  width:118px;padding:10px 0;display:flex;flex-direction:column;gap:6px;
+  border-right:1px solid var(--line);background:rgba(5,13,24,.6);
+}
+nav button{
+  all:unset;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:5px;
+  padding:10px 4px;color:var(--txt-dim);font-size:12px;letter-spacing:1px;
+  border-left:2px solid transparent;transition:all .15s;
+}
+nav button svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.6}
+nav button:hover{color:var(--cyan)}
+nav button.active{color:var(--cyan);border-left-color:var(--cyan);background:linear-gradient(90deg,rgba(0,229,255,.12),transparent);text-shadow:0 0 8px rgba(0,229,255,.6)}
+nav .spacer{flex:1}
+nav .ver{font-size:10px;color:#31536a;text-align:center;padding:6px;font-family:var(--mono)}
+
+main{flex:1;overflow:hidden auto;padding:14px;scrollbar-width:thin;scrollbar-color:#14405c transparent}
+main::-webkit-scrollbar{width:8px}
+main::-webkit-scrollbar-thumb{background:#14405c;border-radius:4px}
+.view{display:none;animation:fadein .25s ease}
+.view.active{display:block}
+@keyframes fadein{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* ---------- panels ---------- */
+.panel{
+  position:relative;background:var(--panel);border:1px solid var(--line);
+  clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px);
+  padding:26px 14px 12px;backdrop-filter:blur(3px);
+}
+.panel::before{
+  content:attr(data-t);position:absolute;top:8px;left:16px;
+  font-size:11px;letter-spacing:3px;color:var(--cyan);
+  text-shadow:0 0 10px rgba(0,229,255,.5);white-space:nowrap;
+}
+.grid{display:grid;gap:14px}
+
+/* ---------- controls ---------- */
+select,input[type=number],input[type=text]{
+  background:rgba(0,18,32,.85);border:1px solid var(--line);color:var(--txt);
+  font-family:var(--mono);font-size:13px;padding:6px 8px;outline:none;border-radius:2px;
+}
+select:focus,input:focus{border-color:var(--line-hi);box-shadow:0 0 8px rgba(0,229,255,.25)}
+input[type=number]{-moz-appearance:textfield}
+input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appearance:none}
+.btn{
+  all:unset;cursor:pointer;text-align:center;padding:6px 14px;font-size:12px;letter-spacing:2px;
+  border:1px solid var(--line);color:var(--txt);background:rgba(0,30,52,.55);
+  clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px);
+  transition:all .15s;user-select:none;white-space:nowrap;
+}
+.btn:hover{border-color:var(--line-hi);color:#fff;box-shadow:0 0 12px rgba(0,229,255,.3),inset 0 0 12px rgba(0,229,255,.08)}
+.btn:active{transform:translateY(1px)}
+.btn.primary{color:#031018;background:linear-gradient(180deg,#3ff2ff,#00b7d4);border-color:#54f3ff;font-weight:700}
+.btn.primary:hover{box-shadow:0 0 18px rgba(0,229,255,.55)}
+.btn.danger{color:#ffd7de;background:linear-gradient(180deg,rgba(255,61,90,.25),rgba(255,61,90,.08));border-color:rgba(255,61,90,.6)}
+.btn.danger:hover{box-shadow:0 0 14px rgba(255,61,90,.4)}
+.btn.green{color:#032015;background:linear-gradient(180deg,#3dffb6,#00d986);border-color:#54ffca;font-weight:700}
+.btn[disabled]{opacity:.35;pointer-events:none}
+.btn.mini{padding:3px 9px;font-size:11px;letter-spacing:1px}
+
+/* switch */
+.switch{all:unset;cursor:pointer;position:relative;width:46px;height:22px;display:inline-block}
+.switch i{position:absolute;inset:0;border:1px solid var(--line);background:rgba(0,18,32,.9);transition:.2s;clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px)}
+.switch i::after{content:'';position:absolute;top:3px;left:4px;width:14px;height:14px;background:#39536a;transition:.2s;clip-path:polygon(4px 0,100% 0,100% calc(100% - 4px),calc(100% - 4px) 100%,0 100%,0 4px)}
+.switch.checked i{border-color:var(--green);background:rgba(0,255,163,.12)}
+.switch.checked i::after{left:26px;background:var(--green);box-shadow:0 0 8px var(--green)}
+.swrow{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--txt-dim)}
+
+/* ---------- dashboard ---------- */
+#dash-top{grid-template-columns:1fr 1fr 340px;margin-bottom:14px}
+.gaugebox{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 8px 8px}
+.gaugebox canvas{display:block}
+.g-lbl{font-size:12px;letter-spacing:4px;color:var(--txt-dim);margin-top:-6px}
+.g-sub{font-size:11px;color:var(--txt-dim);font-family:var(--mono);margin-top:2px}
+.g-sub b{color:var(--cyan)}
+
+#outbig{
+  all:unset;cursor:pointer;display:block;text-align:center;padding:14px 0;margin:6px 0 12px;
+  border:1px solid rgba(255,61,90,.5);color:#ff8ba0;font-size:18px;font-weight:700;letter-spacing:8px;
+  background:linear-gradient(180deg,rgba(255,61,90,.12),rgba(255,61,90,.03));
+  clip-path:polygon(12px 0,100% 0,100% calc(100% - 12px),calc(100% - 12px) 100%,0 100%,0 12px);
+  transition:all .2s;
+}
+#outbig:hover{box-shadow:0 0 18px rgba(255,61,90,.35)}
+#outbig.on{
+  border-color:rgba(0,255,163,.6);color:#8affd2;letter-spacing:8px;
+  background:linear-gradient(180deg,rgba(0,255,163,.16),rgba(0,255,163,.04));
+  animation:outpulse 2.2s ease infinite;
+}
+@keyframes outpulse{50%{box-shadow:0 0 22px rgba(0,255,163,.35)}}
+
+.badges{display:flex;flex-wrap:wrap;gap:8px}
+.badge{
+  padding:5px 12px;font-size:12px;letter-spacing:2px;border:1px solid var(--line);
+  background:rgba(0,20,35,.55);font-family:var(--mono);
+}
+.badge b{font-weight:700}
+.badge.ok{border-color:rgba(0,255,163,.5);color:var(--green);text-shadow:0 0 8px rgba(0,255,163,.5)}
+.badge.warn{border-color:rgba(255,179,0,.6);color:var(--amber);text-shadow:0 0 8px rgba(255,179,0,.5)}
+.badge.alarm{border-color:var(--red);color:var(--red);text-shadow:0 0 10px rgba(255,61,90,.7);animation:pulse .8s infinite}
+.badge.dim{color:var(--txt-dim)}
+
+#dash-mid{grid-template-columns:1fr 1fr 1fr;margin-bottom:14px}
+.setter .row{display:flex;flex-wrap:wrap;align-items:center;gap:4px;margin-top:10px}
+.setter .row input{width:90px;text-align:center;font-size:16px;font-weight:700;color:#e9fdff}
+.setter .row .go{padding:6px 10px}
+.setter .cap{font-size:11px;color:var(--txt-dim);margin-top:8px;font-family:var(--mono)}
+.setter .cap b{color:var(--amber)}
+.step{all:unset;cursor:pointer;width:34px;height:30px;display:flex;align-items:center;justify-content:center;
+  border:1px solid var(--line);font-family:var(--mono);font-size:11px;color:var(--txt);background:rgba(0,26,44,.7);transition:.12s}
+.step:hover{border-color:var(--line-hi);color:#fff;background:rgba(0,229,255,.15)}
+.step:active{transform:scale(.93)}
+.stat3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center;margin-bottom:12px}
+.stat3 .v{font-family:var(--mono);font-size:17px;font-weight:700;color:#e9fdff;text-shadow:0 0 10px rgba(0,229,255,.35)}
+.stat3 .l{font-size:10px;color:var(--txt-dim);letter-spacing:2px;margin-top:2px}
+input[type=range]{-webkit-appearance:none;width:100%;height:4px;background:linear-gradient(90deg,var(--cyan-dim),var(--cyan));outline:none;border-radius:2px}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;background:var(--cyan);cursor:pointer;clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%);box-shadow:0 0 8px var(--cyan)}
+
+#groups{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}
+.gcard{border:1px solid var(--line);background:rgba(0,18,32,.6);padding:9px 10px;position:relative;transition:.15s}
+.gcard:hover{border-color:var(--line-hi)}
+.gcard .gn{font-size:10px;letter-spacing:2px;color:var(--txt-dim)}
+.gcard .gv{font-family:var(--mono);font-size:16px;font-weight:700;color:#e9fdff;margin-top:4px}
+.gcard .gv.a{color:var(--amber)}
+.gcard .gbtns{display:flex;gap:5px;margin-top:8px}
+.gcard .gbtns .btn{flex:1;padding:3px 0;font-size:11px}
+@media (max-width:1250px){#groups{grid-template-columns:repeat(3,1fr)}#dash-top{grid-template-columns:1fr 1fr}#dash-mid{grid-template-columns:1fr 1fr}.auto-two{grid-template-columns:1fr}}
+@media (max-width:880px){#dash-top{grid-template-columns:1fr}#dash-mid{grid-template-columns:1fr}.two{grid-template-columns:1fr}#groups{grid-template-columns:repeat(2,1fr)}}
+
+/* ---------- chart ---------- */
+#chartwrap{position:relative;height:56vh;min-height:340px}
+#chart{width:100%;height:100%;display:block}
+#chartctl{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:12px}
+.legend{display:flex;gap:14px;font-size:12px;font-family:var(--mono);color:var(--txt-dim);margin-left:auto}
+.legend i{display:inline-block;width:16px;height:3px;vertical-align:middle;margin-right:5px}
+
+/* ---------- scan / auto ---------- */
+.two{grid-template-columns:1fr 1fr}
+.frm{display:grid;grid-template-columns:auto 1fr;gap:8px 10px;align-items:center;margin-top:6px}
+.frm label{font-size:12px;color:var(--txt-dim);letter-spacing:1px;white-space:nowrap}
+.frm input{width:100%}
+.prog{height:8px;border:1px solid var(--line);background:rgba(0,16,28,.8);margin-top:12px;position:relative;overflow:hidden}
+.prog i{position:absolute;inset:0;width:0%;background:linear-gradient(90deg,#00b7d4,#00ffa3);box-shadow:0 0 10px rgba(0,255,163,.5);transition:width .3s}
+.runinfo{display:flex;gap:16px;margin-top:8px;font-family:var(--mono);font-size:12px;color:var(--txt-dim)}
+.runinfo b{color:var(--green)}
+table{border-collapse:collapse;width:100%;font-family:var(--mono)}
+th,td{border:1px solid var(--line);padding:5px 8px;text-align:center;font-size:12px}
+th{color:var(--cyan);letter-spacing:2px;font-weight:400;background:rgba(0,229,255,.06)}
+td input{width:100%;border:none;background:transparent;text-align:center;color:#e9fdff;padding:2px}
+td input:focus{background:rgba(0,229,255,.1);outline:1px solid var(--line-hi)}
+tr.cur{background:rgba(0,255,163,.08)}
+tr.cur td:first-child{color:var(--green);text-shadow:0 0 8px rgba(0,255,163,.6)}
+
+/* ---------- console ---------- */
+footer{
+  border-top:1px solid var(--line);background:rgba(3,9,16,.92);
+  display:flex;flex-direction:column;height:150px;transition:height .2s;
+}
+footer.folded{height:30px}
+#conbar{display:flex;align-items:center;gap:10px;padding:4px 12px;font-size:11px;color:var(--txt-dim);border-bottom:1px solid rgba(0,229,255,.08);letter-spacing:2px}
+#conbar .t{color:var(--cyan);letter-spacing:4px}
+#conbar label{display:flex;gap:4px;align-items:center;cursor:pointer;letter-spacing:1px}
+#conlog{flex:1;overflow:auto;padding:4px 12px;font-family:var(--mono);font-size:11.5px;line-height:1.55;scrollbar-width:thin;scrollbar-color:#14405c transparent}
+#conlog .tx{color:#7fd8ff}
+#conlog .rx{color:#7dffca}
+#conlog .er{color:var(--red)}
+#conlog .in{color:#8fa8b8}
+#conlog .ts{color:#3b5d73;margin-right:8px}
+footer.folded #conlog{display:none}
+
+/* ---------- toasts / modal ---------- */
+#toasts{position:fixed;top:66px;right:16px;z-index:50;display:flex;flex-direction:column;gap:8px}
+.toast{
+  min-width:220px;max-width:340px;padding:10px 14px;font-size:12.5px;
+  border:1px solid var(--line-hi);background:rgba(4,18,32,.95);color:var(--txt);
+  clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px);
+  animation:toastin .25s ease;box-shadow:0 0 16px rgba(0,229,255,.15);
+}
+.toast.ok{border-color:rgba(0,255,163,.6)}
+.toast.warn{border-color:rgba(255,179,0,.7)}
+.toast.err{border-color:var(--red);box-shadow:0 0 16px rgba(255,61,90,.3)}
+@keyframes toastin{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:none}}
+#modalbg{position:fixed;inset:0;z-index:60;background:rgba(2,6,12,.72);display:none;align-items:center;justify-content:center}
+#modalbg.show{display:flex}
+#modal{width:400px;background:var(--panel2);border:1px solid var(--line-hi);padding:20px;
+  clip-path:polygon(16px 0,100% 0,100% calc(100% - 16px),calc(100% - 16px) 100%,0 100%,0 16px)}
+#modal h3{color:var(--cyan);letter-spacing:3px;font-size:15px;margin-bottom:12px}
+#modal p{font-size:13px;line-height:1.7;color:var(--txt)}
+#modal .btns{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+.hint{font-size:11px;color:var(--txt-dim);line-height:1.7;margin-top:10px}
+.hint b{color:var(--amber)}
+.infogrid{display:grid;grid-template-columns:auto 1fr;gap:7px 16px;font-size:12.5px;margin-top:6px}
+.infogrid span{color:var(--txt-dim);letter-spacing:1px}
+.infogrid b{font-family:var(--mono);color:#e9fdff;font-weight:400;text-align:right}
+kbd{font-family:var(--mono);border:1px solid var(--line);padding:0 5px;font-size:11px;color:var(--cyan)}
+#noserial{display:none;margin-bottom:14px;border-color:rgba(255,179,0,.5)}
+</style>
+</head>
+<body>
+<div id="bgfx"></div><div id="scanfx"></div><div id="sweepline"></div>
+
+<header>
+  <div id="logo">
+    <svg width="30" height="30" viewBox="0 0 32 32"><polygon points="16,2 29,9 29,23 16,30 3,23 3,9" fill="none" stroke="#00e5ff" stroke-width="1.6"/><polygon points="16,9 16,15 12,15 17,24 17,17 21,17" fill="#00e5ff"/></svg>
+    <div><div class="t1">FNIRSI DPS-150</div><div class="t2">数控电源控制台</div></div>
+  </div>
+  <div id="connbar">
+    <select id="portsel" title="通讯端口"><option value="">— 选择端口 —</option></select>
+    <button class="btn mini" id="refreshports" title="重新枚举已授权端口">⟳</button>
+    <select id="baudsel" title="通讯速率">
+      <option>9600</option><option>19200</option><option>38400</option><option>57600</option>
+      <option selected>115200</option>
+    </select>
+    <button class="btn primary" id="connbtn">联机</button>
+    <div id="statuspill" class=""><span class="led"></span><span id="statustxt">未连接</span></div>
+    <label class="swrow" style="margin-left:8px"><span class="switch" id="demosw"><i></i></span>演示模式</label>
+  </div>
+  <div id="clock">----/--/-- --:--:--</div>
+</header>
+
+<div id="body">
+<nav>
+  <button data-v="dash" class="active"><svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 13l4-4"/><path d="M9 3h6"/></svg>仪表盘</button>
+  <button data-v="chart"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M6 15l4-6 4 3 5-8"/></svg>曲线记录</button>
+  <button data-v="scan"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/></svg>电压/电流扫描</button>
+  <button data-v="auto"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/><path d="M8 4v4M14 10v4M19 16v4"/></svg>自动序列</button>
+  <button data-v="prot"><svg viewBox="0 0 24 24"><path d="M12 3l8 4v6c0 4-3.5 7-8 8-4.5-1-8-4-8-8V7z"/><path d="M12 8v5"/><circle cx="12" cy="16" r=".6" fill="currentColor"/></svg>保护 / 设备</button>
+  <button data-v="fw"><svg viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>固件升级</button>
+  <div class="spacer"></div>
+  <div class="ver">PROTOCOL v2<br>RE-ENG</div>
+</nav>
+
+<main>
+  <!-- ============ 仪表盘 ============ -->
+  <section class="view active" id="view-dash">
+    <div class="panel" id="noserial" data-t="兼容性提示">
+      当前浏览器不支持 <b>Web Serial</b>。请使用 <b>Microsoft Edge</b> 或 <b>Chrome</b> 打开本页面；
+      或先开启右上角 <b>演示模式</b> 体验全部功能。
+    </div>
+    <div class="grid" id="dash-top">
+      <div class="panel gaugebox" data-t="OUTPUT VOLTAGE 输出电压">
+        <canvas id="gV"></canvas>
+        <div class="g-lbl">输出电压</div><div class="g-sub">设定 <b id="gVset">--</b></div>
+      </div>
+      <div class="panel gaugebox" data-t="OUTPUT CURRENT 输出电流">
+        <canvas id="gA"></canvas>
+        <div class="g-lbl">输出电流</div><div class="g-sub">设定 <b id="gAset">--</b></div>
+      </div>
+      <div class="panel" data-t="OUTPUT CONTROL 输出控制">
+        <div id="outbig">输出 关</div>
+        <div class="badges" style="justify-content:center">
+          <span class="badge dim" id="bMode">--</span>
+          <span class="badge dim" id="bStatus">--</span>
+          <span class="badge" id="bTemp">-- ℃</span>
+          <span class="badge" id="bP">-- W</span>
+        </div>
+      </div>
+    </div>
+    <div class="grid" id="dash-mid">
+      <div class="panel setter" data-t="VOLTAGE SET 电压设置" id="setV">
+        <div class="row">
+          <button class="step" data-d="-1">−1</button><button class="step" data-d="-0.1">−.1</button><button class="step" data-d="-0.01">−.01</button>
+          <input type="number" step="0.01" min="0" value="0.00">
+          <button class="step" data-d="0.01">+.01</button><button class="step" data-d="0.1">+.1</button><button class="step" data-d="1">+1</button>
+          <button class="btn go">设定</button>
+        </div>
+        <div class="cap">上限 <b class="maxv">--</b>　输入后按 <b>Enter</b> 下发 · 步进按钮立即下发</div>
+      </div>
+      <div class="panel setter" data-t="CURRENT SET 电流设置" id="setA">
+        <div class="row">
+          <button class="step" data-d="-1">−1</button><button class="step" data-d="-0.1">−.1</button><button class="step" data-d="-0.01">−.001</button>
+          <input type="number" step="0.001" min="0" value="0.000">
+          <button class="step" data-d="0.01">+.001</button><button class="step" data-d="0.1">+.1</button><button class="step" data-d="1">+1</button>
+          <button class="btn go">设定</button>
+        </div>
+        <div class="cap">上限 <b class="maxv">--</b>　输入后按 <b>Enter</b> 下发 · 步进按钮立即下发</div>
+      </div>
+      <div class="panel" data-t="METER 计量">
+        <div class="stat3">
+          <div><div class="v" id="mAh">0.000</div><div class="l">容量 Ah</div></div>
+          <div><div class="v" id="mWh">0.000</div><div class="l">能量 Wh</div></div>
+          <div><div class="v" id="mP">0.00</div><div class="l">功率 W</div></div>
+        </div>
+        <div class="swrow" style="margin-bottom:10px"><span class="switch" id="meassw"><i></i></span>计量开关</div>
+        <div class="swrow">背光亮度<span id="briv">--</span><input type="range" id="brirange" min="1" max="100" value="50"></div>
+      </div>
+    </div>
+    <div class="panel" data-t="EXPRESS DATA 快捷数据组">
+      <div id="groups"></div>
+      <div class="hint">『启用』= 将该组电压/电流设为当前输出设定；『保存』= 把输入框中的值写入设备该组寄存器（子命令 C5…D0）。</div>
+    </div>
+  </section>
+
+  <!-- ============ 曲线 ============ -->
+  <section class="view" id="view-chart">
+    <div class="panel" data-t="REALTIME CURVE 实时曲线">
+      <div id="chartwrap"><canvas id="chart"></canvas></div>
+      <div id="chartctl">
+        <button class="btn green" id="recbtn">● 开始记录</button>
+        <button class="btn mini" id="clrch">清空曲线</button>
+        <button class="btn mini" id="csvbtn">导出 CSV</button>
+        <span class="runinfo">采样点 <b id="ptsn">0</b>　已记录 <b id="recn">0</b></span>
+        <div class="legend">
+          <span><i style="background:#00e5ff"></i>电压 V</span>
+          <span><i style="background:#ffb300"></i>电流 A</span>
+        </div>
+      </div>
+      <div class="hint">曲线始终实时滚动；仅勾选『开始记录』期间的数据会计入 CSV 导出。左轴电压 / 右轴电流，量程跟随设备上限。</div>
+    </div>
+  </section>
+
+  <!-- ============ 扫描 ============ -->
+  <section class="view" id="view-scan">
+    <div class="grid two">
+      <div class="panel" data-t="VOLTAGE SCAN 电压扫描">
+        <div class="frm">
+          <label>恒流值 A</label><input type="number" id="svA" step="0.01" min="0" value="1.000">
+          <label>起始 V</label><input type="number" id="svV0" step="0.01" value="1.00">
+          <label>停止 V</label><input type="number" id="svV1" step="0.01" value="10.00">
+          <label>步进 V</label><input type="number" id="svSt" step="0.01" value="0.50">
+          <label>间隔 s</label><input type="number" id="svDly" step="0.5" min="0.2" value="1.0">
+        </div>
+        <div class="swrow" style="margin-top:10px"><span class="switch checked" id="svOut"><i></i></span>开始时自动开启输出</div>
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <button class="btn primary" id="svRun">▶ 运行</button>
+          <button class="btn danger" id="svStop" disabled>■ 停止</button>
+        </div>
+        <div class="prog"><i id="svBar"></i></div>
+        <div class="runinfo">当前 <b id="svCur">--</b>　状态 <b id="svStat">就绪</b></div>
+      </div>
+      <div class="panel" data-t="CURRENT SCAN 电流扫描">
+        <div class="frm">
+          <label>恒压值 V</label><input type="number" id="saV" step="0.01" min="0" value="5.00">
+          <label>起始 A</label><input type="number" id="saA0" step="0.01" value="0.100">
+          <label>停止 A</label><input type="number" id="saA1" step="0.01" value="3.000">
+          <label>步进 A</label><input type="number" id="saSt" step="0.01" value="0.100">
+          <label>间隔 s</label><input type="number" id="saDly" step="0.5" min="0.2" value="1.0">
+        </div>
+        <div class="swrow" style="margin-top:10px"><span class="switch checked" id="saOut"><i></i></span>开始时自动开启输出</div>
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <button class="btn primary" id="saRun">▶ 运行</button>
+          <button class="btn danger" id="saStop" disabled>■ 停止</button>
+        </div>
+        <div class="prog"><i id="saBar"></i></div>
+        <div class="runinfo">当前 <b id="saCur">--</b>　状态 <b id="saStat">就绪</b></div>
+      </div>
+    </div>
+    <div class="panel" style="margin-top:14px" data-t="NOTE 说明">
+      <div class="hint">扫描由上位机按设定间隔依次下发 电压/电流设定 命令（与原版上位机逻辑一致）。步进为 0 时按单步执行；停止值 &lt; 起始值将自动修正为 起始值+0.01。<b>扫描运行期间请勿断开连接。</b></div>
+    </div>
+  </section>
+
+  <!-- ============ 自动序列 ============ -->
+  <section class="view" id="view-auto">
+    <div class="grid two auto-two">
+      <div class="panel" data-t="SEQUENCE TABLE 步序表">
+        <table id="autotbl">
+          <thead><tr><th style="width:52px">序号</th><th>电压 V</th><th>电流 A</th><th>延时 s</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <div class="hint">表格自动保存在本机浏览器中（对应原版 config.json 的 configTableDatas）。</div>
+      </div>
+      <div>
+        <div class="panel" data-t="RUN CONFIG 运行参数">
+          <div class="frm">
+            <label>循环次数</label><input type="number" id="auCyc" min="1" value="1">
+            <label>开始序号</label><input type="number" id="auS0" min="1" max="10" value="1">
+            <label>停止序号</label><input type="number" id="auS1" min="1" max="10" value="10">
+          </div>
+          <div class="swrow" style="margin-top:10px"><span class="switch checked" id="auOut"><i></i></span>开始时自动开启输出</div>
+          <div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:12px">
+            <button class="btn primary" id="auRun">▶ 开始</button>
+            <button class="btn" id="auPause" disabled>⏸ 暂停</button>
+            <button class="btn" id="auResume" disabled>⏵ 继续</button>
+            <button class="btn danger" id="auStop" disabled>■ 停止</button>
+            <button class="btn mini" id="auStep">单步</button>
+          </div>
+          <div class="prog"><i id="auBar"></i></div>
+          <div class="runinfo">当前序号 <b id="auCurSn">--</b>　当前循环 <b id="auCurCyc">--</b>　状态 <b id="auSt">就绪</b></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 保护 / 设备 ============ -->
+  <section class="view" id="view-prot">
+    <div class="grid two">
+      <div class="panel" data-t="PROTECTION 保护阈值">
+        <div class="frm" id="protfrm">
+          <label>过压 OVP V</label><input type="number" step="0.1" data-k="ovp"><span class="hint" style="grid-column:2">≤ <b class="pmax" data-k="ovp">--</b></span>
+          <label>过流 OCP A</label><input type="number" step="0.01" data-k="ocp"><span class="hint" style="grid-column:2">≤ <b class="pmax" data-k="ocp">--</b></span>
+          <label>过温 OTP ℃</label><input type="number" step="1" data-k="otp"><span class="hint" style="grid-column:2">≤ <b class="pmax" data-k="otp">--</b></span>
+          <label>欠压 LVP V</label><input type="number" step="0.1" data-k="lvp"><span class="hint" style="grid-column:2">≤ <b class="pmax" data-k="lvp">--</b></span>
+          <label>过功 OPP W</label><input type="number" step="0.1" data-k="opp"><span class="hint" style="grid-column:2">≤ <b class="pmax" data-k="opp">--</b></span>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:14px">
+          <button class="btn primary" id="protWr">写入全部阈值</button>
+          <button class="btn mini" id="protRd">从设备读取</button>
+        </div>
+        <div class="hint">阈值保存在设备内（子命令 D1–D5），写入后立即生效。设备回报的当前值会自动回填输入框。</div>
+      </div>
+      <div class="panel" data-t="DEVICE INFO 设备信息">
+        <div class="infogrid">
+          <span>产品型号</span><b id="iModel">--</b>
+          <span>固件版本</span><b id="iFw">--</b>
+          <span>设备地址</span><b id="iAddr">--</b>
+          <span>通讯速率</span><b id="iBaud">--</b>
+          <span>电压上限</span><b id="iVmax">--</b>
+          <span>电流上限</span><b id="iAmax">--</b>
+          <span>按键锁定</span><b id="iLock">--</b>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:14px">
+          <button class="btn mini" id="infoRd">刷新设备参数</button>
+        </div>
+        <div class="hint">『按键锁定』为设备回报的原始字节（FF 应答 @97）。型号 / 固件 / 地址 为设备字符串应答。</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 固件 ============ -->
+  <section class="view" id="view-fw">
+    <div class="panel" data-t="FIRMWARE 固件升级" style="max-width:640px">
+      <p style="line-height:1.9;font-size:13px">
+        点击 <b style="color:var(--red)">BOOT</b> 按钮后，设备将进入固件升级模式。<br>
+        随后把固件文件放入 <b>U 盘</b>，升级完成后<b>重启上位机</b>并重新联机。
+      </p>
+      <div style="margin-top:16px"><button class="btn danger" id="bootbtn" style="padding:10px 40px;font-size:15px">进入 BOOT 模式</button></div>
+      <div class="hint">命令帧：<b>F1 C0 00 01 01</b>（与原版上位机一致）。该操作会中断当前输出，请确认负载安全后再执行。</div>
+    </div>
+  </section>
+</main>
+</div>
+
+<footer id="confoot">
+  <div id="conbar">
+    <span class="t">CONSOLE</span>
+    <label><input type="checkbox" id="fTx" checked>TX</label>
+    <label><input type="checkbox" id="fRx" checked>RX</label>
+    <button class="btn mini" id="conclr">清空</button>
+    <span style="margin-left:auto;cursor:pointer" id="confold">▲ 折叠</span>
+  </div>
+  <div id="conlog"></div>
+</footer>
+
+<div id="toasts"></div>
+<div id="modalbg"><div id="modal">
+  <h3 id="mTitle">确认</h3><p id="mBody"></p>
+  <div class="btns"><button class="btn" id="mNo">取消</button><button class="btn danger" id="mYes">确认执行</button></div>
+</div></div>
+
+<script>
+'use strict';
+/* ================================================================
+   FNIRSI DPS-150 数控电源控制台 —— 协议层
+   帧格式: F1 <class> <sub> <len> <payload[len]> <cksum>
+   cksum = (sub + len + Σpayload) & 0xFF   （小端 float32）
+   ================================================================ */
+const BAUDS=[9600,19200,38400,57600,115200];
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+
+function f32b(v){const b=new Uint8Array(4);new DataView(b.buffer).setFloat32(0,v,true);return b;}
+function b2f(u8,off){return new DataView(u8.buffer,u8.byteOffset+off,4).getFloat32(0,true);}
+function frame(cls,sub,payload){
+  payload=payload||[];
+  const len=payload.length;let sum=(sub+len)&0xFF;
+  for(const b of payload)sum=(sum+b)&0xFF;
+  const out=new Uint8Array(5+len);
+  out[0]=0xF1;out[1]=cls;out[2]=sub;out[3]=len;
+  out.set(payload,4);out[4+len]=sum;return out;
+}
+const CMD={
+  LINK_ON :()=>frame(0xC1,0x00,[0x00]),
+  LINK_OFF:()=>frame(0xC1,0x00,[0x01]),
+  BOOT    :()=>frame(0xC0,0x00,[0x01]),
+  GET_ALL :()=>frame(0xA1,0xFF,[]),
+  GET_VSET:()=>frame(0xA1,0xC0,[]),
+  GET_MEAS:()=>frame(0xA1,0xC3,[]),
+  GET_MODEL:()=>frame(0xA1,0xDE,[]),
+  GET_ADDR:()=>frame(0xA1,0xDF,[]),
+  GET_FW  :()=>frame(0xA1,0xE0,[]),
+  GET_LINK:()=>frame(0xA1,0xE1,[]),
+  SET_BAUD:i=>frame(0xB0,0x00,[i]),          // i = 1..5
+  SET_V   :v=>frame(0xB1,0xC1,f32b(v)),
+  SET_A   :v=>frame(0xB1,0xC2,f32b(v)),
+  SET_BRIGHT:v=>frame(0xB1,0xD6,[v&0xFF]),
+  MEAS_ON :()=>frame(0xB1,0xD8,[0x00]),
+  MEAS_OFF:()=>frame(0xB1,0xD8,[0x01]),
+  OUT_ON  :()=>frame(0xB1,0xDB,[0x01]),
+  OUT_OFF :()=>frame(0xB1,0xDB,[0x00]),
+  GRP_V:(i,v)=>frame(0xB1,0xC3+2*i,f32b(v)), // i=1..6 → C5,C7,…CF
+  GRP_A:(i,v)=>frame(0xB1,0xC4+2*i,f32b(v)), //        C6,C8,…D0
+  PROT:{ovp:v=>frame(0xB1,0xD1,f32b(v)), ocp:v=>frame(0xB1,0xD2,f32b(v)),
+        otp:v=>frame(0xB1,0xD3,f32b(v)), lvp:v=>frame(0xB1,0xD4,f32b(v)),
+        opp:v=>frame(0xB1,0xD5,f32b(v))},
+};
+const hex=u8=>[...u8].map(b=>b.toString(16).toUpperCase().padStart(2,'0')).join(' ');
+let gbk;try{gbk=new TextDecoder('gbk')}catch(e){gbk=new TextDecoder('latin1')}
+const decStr=u8=>gbk.decode(u8).replace(/[\u0000-\u001f\ufffe\uffff]/g,'').trim();
+
+/* ---------------- 帧解析器 ---------------- */
+class Parser{
+  constructor(onFrame){this.buf=new Uint8Array(0);this.onFrame=onFrame}
+  feed(u8){
+    let b=this.buf.length?concatU8(this.buf,u8):u8;
+    let i=0;
+    for(;;){
+      const idx=b.indexOf(0xF1,i);
+      if(idx<0||idx+4>b.length){b=idx>=0?b.slice(idx):new Uint8Array(0);break}
+      const sub=b[idx+2],len=b[idx+3],total=5+len;
+      if(idx+total>b.length){b=b.slice(idx);break}
+      let sum=(sub+len)&0xFF;
+      for(let k=0;k<len;k++)sum=(sum+b[idx+4+k])&0xFF;
+      const f=b.slice(idx,idx+total);
+      if(sum===b[idx+4+len])this.onFrame(f);
+      else clog('er','RX 校验和错误: '+hex(f));
+      i=idx+total;
+      if(i>=b.length){b=new Uint8Array(0);break}
+    }
+    this.buf=b;
+  }
+}
+function concatU8(a,b){const o=new Uint8Array(a.length+b.length);o.set(a);o.set(b,a.length);return o}
+
+/* ================================================================
+   设备状态
+   ================================================================ */
+const dev={
+  linked:false,connecting:false,demo:false,
+  vset:0,aset:0,vout:0,iout:0,pout:0,temp:0,
+  status:0,mode:0,output:false,measOn:false,bright:50,
+  ah:0,wh:0,vmax:24,amax:5,baudIdx:0,keyByte:255,
+  model:'',fw:'',addr:'',
+  groups:Array.from({length:6},()=>({v:0,a:0})),
+  prot:{ovp:0,ocp:0,otp:0,lvp:0,opp:0},
+  protMax:{ovp:0,ocp:0,otp:0,lvp:0,opp:0},
+};
+const STATUS_TXT=['正常','过压保护 OVP','过流保护 OCP','过功率保护 OPP','过温保护 OTP','欠压保护 LVP'];
+const STATUS_CLS=['ok','alarm','alarm','alarm','alarm','alarm'];
+
+/* ================================================================
+   传输层：Web Serial + 演示模拟器
+   ================================================================ */
+let port=null,reader=null,writer=null;
+const parser=new Parser(onFrame);
+
+async function serialOpen(baud){
+  port=await navigator.serial.requestPort();
+  await port.open({baudRate:baud,dataBits:8,stopBits:1,parity:'none',flowControl:'none',bufferSize:2048});
+  try{await port.setSignals({requestToSend:true})}catch(e){}
+  writer=port.writable.getWriter();
+  readLoop();
+}
+async function readLoop(){
+  try{
+    reader=port.readable.getReader();
+    for(;;){
+      const{value,done}=await reader.read();
+      if(done)break;
+      if(value&&value.length){clog('rx','RX '+hex(value));parser.feed(value)}
+    }
+  }catch(e){}
+  if(dev.linked||dev.connecting)onUnplug();
+}
+async function serialClose(){
+  try{reader&&await reader.cancel()}catch(e){}
+  try{reader&&reader.releaseLock()}catch(e){}
+  try{writer&&writer.releaseLock()}catch(e){}
+  try{port&&await port.close()}catch(e){}
+  reader=writer=port=null;
+}
+async function rawSend(u8){
+  clog('tx','TX '+hex(u8));
+  if(dev.demo){demoFeed(u8);return}
+  if(!writer)return;
+  await writer.write(u8);
+}
+
+/* ---------- 演示模式虚拟设备 ---------- */
+const sim={
+  t:null,vset:5,aset:1,vout:0,iout:0,pout:0,temp:27,ah:0,wh:0,
+  output:false,mode:0,status:0,bright:50,measOn:false,load:9.5,
+  groups:Array.from({length:6},(_,i)=>({v:(i+1)*3,a:(i+1)*0.5})),
+  prot:{ovp:26,ocp:5.5,otp:85,lvp:1,opp:155},
+};
+function simResp(cls,sub,payload){setTimeout(()=>{const f=frame(cls,sub,payload);clog('rx','RX '+hex(f));parser.feed(f)},60+Math.random()*120)}
+function demoFeed(u8){
+  const cls=u8[1],sub=u8[2],len=u8[3],p=u8.slice(4,4+len);
+  switch(true){
+    case cls===0xC1&&p[0]===0: simResp(0xA1,0xE1,[sim.bright]); break;
+    case cls===0xC1&&p[0]===1: simStop(); break;
+    case cls===0xA1&&sub===0xDE: simResp(0xA1,0xDE,[...'DPS-150'].map(c=>c.charCodeAt(0))); break;
+    case cls===0xA1&&sub===0xE0: simResp(0xA1,0xE0,[...'V2.1.6'].map(c=>c.charCodeAt(0))); break;
+    case cls===0xA1&&sub===0xDF: simResp(0xA1,0xDF,[...'FN-0042'].map(c=>c.charCodeAt(0))); break;
+    case cls===0xA1&&sub===0xE1: simResp(0xA1,0xE1,[sim.bright]); break;
+    case cls===0xA1&&sub===0xC0: simResp(0xA1,0xC0,f32b(sim.vset)); break;
+    case cls===0xA1&&sub===0xFF: simResp(0xA1,0xFF,simAll()); break;
+    case cls===0xB1&&sub===0xC1: sim.vset=b2f(p,0); simResp(0xA1,0xC0,f32b(sim.vset)); break;
+    case cls===0xB1&&sub===0xC2: sim.aset=b2f(p,0); simResp(0xA1,0xC1,f32b(sim.aset)); break;
+    case cls===0xB1&&sub===0xD6: sim.bright=p[0]; simResp(0xA1,0xE1,[sim.bright]); break;
+    case cls===0xB1&&sub===0xD8: sim.measOn=p[0]===0; break;
+    case cls===0xB1&&sub===0xDB: sim.output=p[0]===1; simResp(0xA1,0xDB,[p[0]]); break;
+    case cls===0xB1&&sub>=0xC5&&sub<=0xD0:{
+      const g=sub-0xC5,i=g>>1,isA=g&1;
+      sim.groups[i][isA?'a':'v']=b2f(p,0); break;}
+    case cls===0xB1&&sub>=0xD1&&sub<=0xD5:{
+      sim.prot[['ovp','ocp','otp','lvp','opp'][sub-0xD1]]=b2f(p,0); break;}
+    case cls===0xC0: toast('演示设备已进入 BOOT 模式（模拟）','warn'); break;
+  }
+}
+function simAll(){
+  const p=new Uint8Array(139),dv=new DataView(p.buffer);
+  const put=(o,v)=>dv.setFloat32(o,v,true);
+  put(0,sim.vset);put(4,sim.vset);put(8,sim.aset);
+  put(12,sim.vout);put(16,sim.iout);put(20,sim.pout);put(24,sim.temp);
+  sim.groups.forEach((g,i)=>{put(28+i*8,g.v);put(32+i*8,g.a)});
+  put(76,sim.prot.ovp);put(80,sim.prot.ocp);put(84,sim.prot.otp);put(88,sim.prot.lvp);put(92,sim.prot.opp);
+  p[96]=sim.bright;p[97]=0;p[98]=sim.measOn?0:1;
+  put(99,sim.ah);put(103,sim.wh);
+  p[107]=sim.output?1:0;p[108]=sim.status;p[109]=sim.mode;
+  put(111,31);put(115,5.5);
+  put(119,31);put(123,5.5);put(127,99);put(131,15);put(135,160);
+  return p;
+}
+function simTick(){
+  const dt=.8;
+  sim.load+= (Math.random()-.5)*.6; sim.load=Math.max(4,Math.min(40,sim.load));
+  if(sim.output){
+    sim.vout+= (sim.vset-sim.vout)*.6 + (Math.random()-.5)*.02;
+    let want=sim.vout/sim.load;
+    if(want>=sim.aset){want=sim.aset;sim.mode=1}else sim.mode=0;
+    sim.iout+=(want-sim.iout)*.5+(Math.random()-.5)*.008;
+    sim.iout=Math.max(0,sim.iout);
+    sim.pout=sim.vout*sim.iout;
+    if(sim.measOn){sim.ah+=sim.iout*dt/3600;sim.wh+=sim.pout*dt/3600}
+  }else{sim.vout*= .8;sim.iout*=.8;sim.pout=sim.vout*sim.iout;sim.mode=0}
+  sim.temp+=((27+sim.pout*.9)-sim.temp)*.05+(Math.random()-.5)*.15;
+  if(sim.vset>31){sim.status=1;sim.output=false}else if(sim.status===1&&sim.vset<=31)sim.status=0;
+  simResp(0xA1,0xC3,concatU8(f32b(Math.max(0,sim.vout)),concatU8(f32b(sim.iout),f32b(sim.pout))));
+  simResp(0xA1,0xC4,f32b(sim.temp));
+  if(sim.measOn&&Math.random()<.12){
+    Math.random()<.5?simResp(0xA1,0xD9,f32b(sim.ah)):simResp(0xA1,0xDA,f32b(sim.wh));
+  }
+}
+function simStop(){if(sim.t){clearInterval(sim.t);sim.t=null}}
+
+/* ================================================================
+   连接管理
+   ================================================================ */
+async function doConnect(){
+  if(dev.linked){doDisconnect();return}
+  const baud=+$('#baudsel').value;
+  dev.connecting=true;dev.linked=false;renderConn();
+  try{
+    if(!dev.demo){
+      if(!('serial'in navigator))throw new Error('浏览器不支持 Web Serial');
+      await serialOpen(baud);
+    }else{
+      simStop();sim.t=setInterval(simTick,800);sim.output=false;sim.status=0;sim.ah=0;sim.wh=0;sim.vout=0;sim.iout=0;
+    }
+    await rawSend(CMD.LINK_ON());
+    const ok=await waitLink();
+    if(!ok)throw new Error('设备无应答');
+    dev.linked=true;
+    dev.baudIdx=BAUDS.indexOf(baud)+1;
+    await rawSend(CMD.SET_BAUD(dev.baudIdx));
+    await rawSend(CMD.GET_MODEL());
+    await rawSend(CMD.GET_FW());
+    await rawSend(CMD.GET_ADDR());
+    await rawSend(CMD.GET_ALL());
+    toast('连接成功 · '+(dev.demo?'演示设备':baud+'bps'),'ok');
+    clog('in','—— 已联机 ———');
+  }catch(e){
+    clog('er','连接失败: '+e.message);
+    toast('连接失败：'+e.message,'err');
+    if(dev.demo)simStop();
+    else await serialClose();
+    dev.linked=false;
+  }
+  dev.connecting=false;renderConn();
+}
+function waitLink(){
+  return new Promise(res=>{
+    let waited=0,tick=0;
+    const iv=setInterval(()=>{
+      tick++;
+      if(dev.linked){clearInterval(iv);res(true);return}
+      waited+=150;
+      if(tick%5===0&&tick<=10)rawSend(CMD.GET_LINK());   // 每 750ms 重发一次, 最多 2 次
+      if(waited>2600){clearInterval(iv);res(false)}
+    },150);
+  });
+}
+async function doDisconnect(){
+  if(scanCtl.running)stopScan(true);
+  if(autoCtl.running)autoStop();
+  try{await rawSend(CMD.LINK_OFF())}catch(e){}
+  await new Promise(r=>setTimeout(r,120));
+  if(dev.demo)simStop(); else await serialClose();
+  dev.linked=false;dev.connecting=false;
+  dev.vout=dev.iout=dev.pout=0;
+  clog('in','—— 已断开 ———');
+  toast('已断开连接','warn');
+  renderConn();render();
+}
+function onUnplug(){
+  if(scanCtl.running)stopScan(true);
+  if(autoCtl.running)autoStop();
+  dev.linked=false;dev.connecting=false;
+  serialClose();
+  toast('检测到设备断开','err');
+  renderConn();render();
+}
+function onFrame(f){
+  const cls=f[1],sub=f[2],len=f[3],p=f.slice(4,4+len);
+  if(sub===0xE1){dev.bright=p[0];if(!dev.linked)dev.linked=true}
+  switch(sub){
+    case 0xC0: dev.vset=b2f(p,0); break;
+    case 0xC1: dev.aset=b2f(p,0); break;
+    case 0xC3: dev.vout=b2f(p,0);dev.iout=b2f(p,4);dev.pout=b2f(p,8);chartPush(); break;
+    case 0xC4: dev.temp=b2f(p,0); break;
+    case 0xD9: dev.ah=b2f(p,0); break;
+    case 0xDA: dev.wh=b2f(p,0); break;
+    case 0xDB: dev.output=p[0]===1; break;
+    case 0xDC: if(dev.status!==p[0]&&p[0]!==0)toast(STATUS_TXT[p[0]]||'状态 '+(p[0]),'err');dev.status=p[0]; break;
+    case 0xDD: dev.mode=p[0]; break;
+    case 0xDE: dev.model=decStr(p); break;
+    case 0xDF: dev.addr=decStr(p); break;
+    case 0xE0: dev.fw=decStr(p); break;
+    case 0xE2: dev.vmax=b2f(p,0); break;
+    case 0xE3: dev.amax=b2f(p,0); break;
+    case 0xFF: parseAll(p); break;
+  }
+  render();
+}
+function parseAll(p){
+  if(p.length<139)return;
+  dev.vset=b2f(p,0);dev.aset=b2f(p,8);
+  dev.vout=b2f(p,12);dev.iout=b2f(p,16);dev.pout=b2f(p,20);dev.temp=b2f(p,24);
+  for(let i=0;i<6;i++){dev.groups[i].v=b2f(p,28+i*8);dev.groups[i].a=b2f(p,32+i*8)}
+  dev.prot.ovp=b2f(p,76);dev.prot.ocp=b2f(p,80);dev.prot.otp=b2f(p,84);
+  dev.prot.lvp=b2f(p,88);dev.prot.opp=b2f(p,92);
+  dev.bright=p[96];dev.keyByte=p[97];dev.measOn=p[98]===0;
+  dev.ah=b2f(p,99);dev.wh=b2f(p,103);
+  dev.output=p[107]===1;dev.status=p[108];dev.mode=p[109];
+  dev.vmax=b2f(p,111);dev.amax=b2f(p,115);
+  if(gaugeV.max!==dev.vmax&&dev.vmax>0){gaugeV.max=dev.vmax;gaugeV.fit()}
+  if(gaugeA.max!==dev.amax&&dev.amax>0){gaugeA.max=dev.amax;gaugeA.fit()}
+  dev.protMax.ovp=b2f(p,119);dev.protMax.ocp=b2f(p,123);dev.protMax.otp=b2f(p,127);
+  dev.protMax.lvp=b2f(p,131);dev.protMax.opp=b2f(p,135);
+  chartPush();
+}
+async function send(fn,...a){if(!dev.linked&&!dev.demo)return;try{await rawSend(fn(...a))}catch(e){clog('er','发送失败 '+e.message)}}
+
+/* ================================================================
+   仪表盘渲染
+   ================================================================ */
+function renderConn(){
+  const pill=$('#statuspill'),txt=$('#statustxt'),btn=$('#connbtn');
+  pill.className='';
+  if(dev.connecting){pill.classList.add('linking');txt.textContent=dev.demo?'正在连接演示设备…':'正在联机…';btn.textContent='取消';}
+  else if(dev.linked){pill.classList.add('on');txt.textContent='已连接 · '+(dev.demo?'演示模式':$('#baudsel').value+'bps');btn.textContent='断开连接';}
+  else{txt.textContent=dev.demo?'演示模式 · 未连接':'未连接';btn.textContent='联机';}
+  $('#portsel').disabled=dev.demo||dev.linked;
+  $('#baudsel').disabled=dev.linked;
+  $('#outbig').classList.toggle('on',dev.output&&dev.linked);
+  $('#outbig').textContent=(dev.linked&&dev.output)?'输出 开':'输出 关';
+}
+const F2=v=>(isFinite(v)?v:0).toFixed(2), F3=v=>(isFinite(v)?v:0).toFixed(3);
+function render(){
+  // gauges
+  gaugeV.set(dev.linked?dev.vout:0, dev.vset);
+  gaugeA.set(dev.linked?dev.iout:0, dev.aset);
+  $('#gVset').textContent=F2(dev.vset)+' V';
+  $('#gAset').textContent=F3(dev.aset)+' A';
+  // badges
+  $('#bMode').textContent=dev.mode?'恒流 CC':'恒压 CV';
+  $('#bMode').className='badge '+(dev.mode?'warn':'ok');
+  const st=dev.linked?dev.status:-1;
+  $('#bStatus').textContent=st<0?'--':STATUS_TXT[st]||('--');
+  $('#bStatus').className='badge '+(st<0?'dim':STATUS_CLS[st]);
+  $('#bTemp').textContent=Math.round(dev.temp)+' ℃';
+  $('#bP').textContent=F2(dev.pout)+' W';
+  // meters
+  $('#mAh').textContent=F3(dev.ah);$('#mWh').textContent=F3(dev.wh);$('#mP').textContent=F2(dev.pout);
+  $('#meassw').classList.toggle('checked',dev.measOn);
+  $('#briv').textContent=dev.bright;
+  if(!$('#brirange').matches(':active'))$('#brirange').value=dev.bright;
+  // setters
+  const sv=$('#setV input'),sa=$('#setA input');
+  if(document.activeElement!==sv)sv.value=F2(dev.vset);
+  if(document.activeElement!==sa)sa.value=F3(dev.aset);
+  $$('#setV .maxv').forEach(e=>e.textContent=F2(dev.vmax)+'V');
+  $$('#setA .maxv').forEach(e=>e.textContent=F3(dev.amax)+'A');
+  renderGroups();
+  // prot
+  $$('#protfrm input[data-k]').forEach(inp=>{
+    if(document.activeElement!==inp)inp.value=({ovp:dev.prot.ovp,ocp:dev.prot.ocp,otp:dev.prot.otp,lvp:dev.prot.lvp,opp:dev.prot.opp})[inp.dataset.k];
+  });
+  $$('.pmax').forEach(e=>{e.textContent=({ovp:dev.protMax.ovp,ocp:dev.protMax.ocp,otp:dev.protMax.otp,lvp:dev.protMax.lvp,opp:dev.protMax.opp})[e.dataset.k]||'--'});
+  // info
+  $('#iModel').textContent=dev.model||'--';
+  $('#iFw').textContent=dev.fw||'--';
+  $('#iAddr').textContent=dev.addr||'--';
+  $('#iBaud').textContent=dev.baudIdx?BAUDS[dev.baudIdx-1]+' bps':'--';
+  $('#iVmax').textContent=F2(dev.vmax)+' V';
+  $('#iAmax').textContent=F3(dev.amax)+' A';
+  $('#iLock').textContent=dev.keyByte===255?'--':(dev.keyByte?'已锁定':'未锁定');
+  $('#bootbtn').disabled=!dev.linked;
+}
+
+/* ---------- 快捷数据组 ---------- */
+function renderGroups(){
+  const wrap=$('#groups');
+  if(!wrap.children.length){
+    for(let i=1;i<=6;i++){
+      const d=document.createElement('div');d.className='gcard';
+      d.innerHTML=`<div class="gn">数据组 ${i}</div>
+        <div class="gv">V <input type="number" step="0.01" data-g="${i}" data-va="v" style="width:64px;font-size:12px"></div>
+        <div class="gv a">A <input type="number" step="0.001" data-g="${i}" data-va="a" style="width:64px;font-size:12px"></div>
+        <div class="gbtns"><button class="btn" data-act="save" data-g="${i}">保存</button><button class="btn green" data-act="use" data-g="${i}">启用</button></div>`;
+      wrap.appendChild(d);
+    }
+  }
+  dev.groups.forEach((g,i)=>{
+    const w=wrap.children[i];
+    const iv=w.querySelector('[data-va=v]'),ia=w.querySelector('[data-va=a]');
+    if(document.activeElement!==iv)iv.value=F2(g.v);
+    if(document.activeElement!==ia)ia.value=F3(g.a);
+  });
+}
+$('#groups').addEventListener('click',async e=>{
+  const b=e.target.closest('button');if(!b||!dev.linked&&!dev.demo)return;
+  const i=+b.dataset.g,w=b.closest('.gcard');
+  const v=+w.querySelector('[data-va=v]').value,a=+w.querySelector('[data-va=a]').value;
+  if(b.dataset.act==='save'){
+    await send(CMD.GRP_V,i,v);await sleep(60);await send(CMD.GRP_A,i,a);
+    await sleep(150);
+    await send(CMD.GET_ALL);        // 回读，防止 UI 回弹
+    toast(`数据组${i} 已写入设备`,'ok');
+  }else{
+    await send(CMD.SET_V,v);await sleep(60);await send(CMD.SET_A,a);
+    dev.vset=v;dev.aset=a;render();
+    toast(`已启用数据组${i}（V=${F2(v)} A=${F3(a)}）`,'ok');
+  }
+});
+
+/* ================================================================
+   弧形仪表
+   ================================================================ */
+class Gauge{
+  constructor(cv,{max=10,color='#00e5ff',fmt=F2,unit='V',label=''}){
+    this.cv=cv;this.ctx=cv.getContext('2d');
+    this.max=max;this.color=color;this.fmt=fmt;this.unit=unit;this.label=label;
+    this.cur=0;this.tgt=0;this.setv=0;this.on=false;
+    new ResizeObserver(()=>this.fit()).observe(cv.parentElement);
+    this.fit();requestAnimationFrame(()=>this.anim());
+  }
+  fit(){
+    const p=this.cv.parentElement,cs=getComputedStyle(p);
+    const availW=(p.clientWidth||300)-parseFloat(cs.paddingLeft)-parseFloat(cs.paddingRight);
+    const w=Math.round(Math.max(150,Math.min(300,availW)));
+    const h=Math.round(Math.max(160,Math.min(230,w*.8)));
+    const dpr=devicePixelRatio||1;
+    this.cv.style.width=w+'px';this.cv.style.height=h+'px';
+    this.cv.width=Math.round(w*dpr);this.cv.height=Math.round(h*dpr);
+    this.ctx.setTransform(dpr,0,0,dpr,0,0);
+    this.w=w;this.h=h;this.draw();
+  }
+  set(v,setv){this.tgt=Math.max(0,v);this.setv=setv||0;this.on=true}
+  anim(){this.cur+=(this.tgt-this.cur)*.18;this.draw();requestAnimationFrame(()=>this.anim())}
+  draw(){
+    const{ctx,w,h}=this;if(!w)return;
+    const cx=w/2;
+    const topPad=30,botPad=6;
+    const R=Math.min(w*.42,(h-topPad-botPad)/1.97);
+    const cy=topPad+R*1.22;
+    const a0=Math.PI*.75,a1=Math.PI*2.25;
+    ctx.clearRect(0,0,w,h);
+    // track
+    ctx.lineWidth=R*.13;ctx.lineCap='round';
+    ctx.strokeStyle='rgba(20,50,75,.9)';
+    ctx.beginPath();ctx.arc(cx,cy,R,a0,a1);ctx.stroke();
+    // ticks
+    ctx.lineWidth=1;
+    for(let i=0;i<=10;i++){
+      const a=a0+(a1-a0)*i/10,big=i%5===0;
+      const r1=R*1.02,r2=R*(big?1.12:1.07);
+      ctx.strokeStyle=big?'rgba(0,229,255,.5)':'rgba(0,229,255,.22)';
+      ctx.beginPath();
+      ctx.moveTo(cx+Math.cos(a)*r1,cy+Math.sin(a)*r1);
+      ctx.lineTo(cx+Math.cos(a)*r2,cy+Math.sin(a)*r2);
+      ctx.stroke();
+      if(big){
+        ctx.fillStyle='rgba(95,139,161,.9)';ctx.font='10px Consolas';ctx.textAlign='center';
+        const vr=this.max*i/10;
+        ctx.fillText(vr>=10?Math.round(vr):+vr.toFixed(1),cx+Math.cos(a)*R*1.22,cy+Math.sin(a)*R*1.22+3);
+      }
+    }
+    // value arc
+    const t=this.on?Math.min(1,this.cur/this.max):0;
+    if(t>0.003){
+      const grad=ctx.createLinearGradient(cx-R,cy,cx+R,cy);
+      grad.addColorStop(0,this.color);grad.addColorStop(1,'#00ffa3');
+      ctx.strokeStyle=grad;ctx.lineWidth=R*.13;
+      ctx.shadowColor=this.color;ctx.shadowBlur=16;
+      ctx.beginPath();ctx.arc(cx,cy,R,a0,a0+(a1-a0)*t);ctx.stroke();
+      ctx.shadowBlur=0;
+    }
+    // set marker
+    if(this.on&&this.setv>0){
+      const a=a0+(a1-a0)*Math.min(1,this.setv/this.max);
+      ctx.strokeStyle='#ffb300';ctx.lineWidth=2.5;
+      ctx.beginPath();
+      ctx.moveTo(cx+Math.cos(a)*R*.86,cy+Math.sin(a)*R*.86);
+      ctx.lineTo(cx+Math.cos(a)*R*1.0,cy+Math.sin(a)*R*1.0);
+      ctx.stroke();
+    }
+    // center number
+    ctx.textAlign='center';
+    ctx.fillStyle='#eaffff';
+    ctx.font='700 34px Consolas';
+    ctx.shadowColor=this.color;ctx.shadowBlur=14;
+    ctx.fillText(this.on?this.fmt(this.cur):'--',cx,cy+2);
+    ctx.shadowBlur=0;
+    ctx.fillStyle='#5f8ba1';ctx.font='12px Consolas';
+    ctx.fillText(this.unit,cx,cy+20);
+  }
+}
+const gaugeV=new Gauge($('#gV'),{max:31,color:'#00e5ff',fmt:F2,unit:'VOLT  V'});
+const gaugeA=new Gauge($('#gA'),{max:5.5,color:'#ffb300',fmt:F3,unit:'AMP  A'});
+
+/* ================================================================
+   曲线 + 记录
+   ================================================================ */
+const ring=[];const RING_MAX=2400;
+let recording=false,recRows=[];
+function chartPush(){
+  const t=Date.now();
+  ring.push({t,v:dev.vout,a:dev.iout});
+  if(ring.length>RING_MAX)ring.shift();
+  if(recording)recRows.push([t,dev.vout,dev.iout,dev.pout,dev.output?1:0,dev.mode?'CC':'CV',STATUS_TXT[dev.status]||'']);
+  $('#ptsn').textContent=ring.length;$('#recn').textContent=recRows.length;
+}
+const SPAN=180000; // 3 min window
+function drawChart(){
+  const cv=$('#chart'),wrap=$('#chartwrap');
+  const dpr=devicePixelRatio||1;
+  const w=wrap.clientWidth,h=wrap.clientHeight;
+  if(cv.width!==w*dpr||cv.height!==h*dpr){cv.width=w*dpr;cv.height=h*dpr}
+  const ctx=cv.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,w,h);
+  const L=52,Rr=54,T=14,B=24;
+  const pw=w-L-Rr,ph=h-T-B;
+  const vmax=Math.max(31,dev.vmax)*1.05,amax=Math.max(5.5,dev.amax)*1.05;
+  const now=Date.now();
+  // grid
+  ctx.font='10px Consolas';ctx.fillStyle='#4a718c';
+  ctx.strokeStyle='rgba(0,229,255,.08)';ctx.lineWidth=1;
+  for(let i=0;i<=6;i++){
+    const y=T+ph*i/6;
+    ctx.beginPath();ctx.moveTo(L,y);ctx.lineTo(L+pw,y);ctx.stroke();
+    ctx.textAlign='right';ctx.fillText(F2(vmax*(1-i/6)),L-6,y+3);
+    ctx.textAlign='left';ctx.fillStyle='#8a6d1f';ctx.fillText(F2(amax*(1-i/6)),L+pw+8,y+3);ctx.fillStyle='#4a718c';
+  }
+  for(let i=0;i<=6;i++){
+    const x=L+pw*i/6;
+    ctx.beginPath();ctx.moveTo(x,T);ctx.lineTo(x,T+ph);ctx.stroke();
+    const tt=new Date(now-SPAN+i*SPAN/6);
+    ctx.textAlign='center';ctx.fillText(('0'+tt.getMinutes()).slice(-2)+':'+('0'+tt.getSeconds()).slice(-2),x,h-8);
+  }
+  if(ring.length<2){ctx.fillStyle='#31536a';ctx.textAlign='center';ctx.font='13px Microsoft YaHei';ctx.fillText('等待数据…',L+pw/2,T+ph/2);return}
+  const line=(key,scale,color)=>{
+    ctx.strokeStyle=color;ctx.lineWidth=1.8;
+    ctx.shadowColor=color;ctx.shadowBlur=6;
+    ctx.beginPath();let started=false;
+    for(const d of ring){
+      const x=L+pw*(1-(now-d.t)/SPAN);
+      if(x<L-30)continue;
+      const y=T+ph*(1-d[key]/scale);
+      started?ctx.lineTo(x,y):(ctx.moveTo(x,y),started=true);
+    }
+    ctx.stroke();ctx.shadowBlur=0;
+  };
+  line('v',vmax,'#00e5ff');
+  line('a',amax,'#ffb300');
+}
+setInterval(()=>{if($('#view-chart').classList.contains('active'))drawChart()},200);
+
+$('#recbtn').onclick=()=>{
+  recording=!recording;
+  $('#recbtn').textContent=recording?'■ 停止记录':'● 开始记录';
+  $('#recbtn').className='btn '+(recording?'danger':'green');
+  if(recording)recRows=[];
+};
+$('#clrch').onclick=()=>{ring.length=0;drawChart()};
+$('#csvbtn').onclick=()=>{
+  if(!recRows.length)return toast('没有已记录的数据','warn');
+  const esc=v=>typeof v==='string'&&/[",\n]/.test(v)?'"'+v+'"':v;
+  const rows=[['记录时间','输出电压(V)','输出电流(A)','输出功率(W)','输出状态','输出模式','运行状态'],
+    ...recRows.map(r=>[new Date(r[0]).toLocaleString('sv-IR').replace(' ',' '),...r.slice(1).map(esc)])];
+  const csv='\ufeff'+rows.map(r=>r.join(',')).join('\r\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  const d=new Date(),p=n=>('0'+n).slice(-2);
+  a.download=`DPS150记录_${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}.csv`;
+  a.click();URL.revokeObjectURL(a.href);
+  toast(`已导出 ${recRows.length} 条记录`,'ok');
+};
+
+/* ================================================================
+   扫描引擎
+   ================================================================ */
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+async function isleep(ms,flag){ // 可中断睡眠
+  let t=0;while(t<ms&&!flag.stop){await sleep(50);t+=50}
+  return!flag.stop;
+}
+const scanCtl={running:false,stop:false};
+async function runScan(kind){
+  const V=kind==='V';
+  const g=id=>$('#'+id);
+  const fixed=+g(V?'svA':'saV').value,start=+g(V?'svV0':'saA0').value;
+  let stop=+g(V?'svV1':'saA1').value,step=+g(V?'svSt':'saSt').value;
+  const dly=Math.max(.2,+g(V?'svDly':'saDly').value);
+  const lim=V?dev.vmax:dev.amax;
+  if(stop<start)stop=start+0.01;
+  if(step<=0||step>stop-start)step=stop-start;
+  if(fixed>lim)return toast(`恒${V?'流':'压'}值超过设备上限 ${lim}`,'err');
+  scanCtl.running=true;scanCtl.stop=false;
+  g(V?'svRun':'saRun').disabled=true;g(V?'svStop':'saStop').disabled=false;
+  g(V?'svStat':'saStat').textContent='运行中';
+  if($(V?'#svOut':'#saOut').classList.contains('checked'))await send(CMD.OUT_ON);
+  await send(V?CMD.SET_A:CMD.SET_V,fixed);
+  await sleep(400);
+  let cur=start;
+  const bar=g(V?'svBar':'saBar'),curEl=g(V?'svCur':'saCur');
+  const total=stop-start;
+  while(cur<stop+1e-9&&!scanCtl.stop){
+    cur=Math.min(cur,stop);
+    await send(V?CMD.SET_V:CMD.SET_A,+cur.toFixed(3));
+    dev[V?'vset':'aset']=cur;render();
+    curEl.textContent=(V?F2(cur):F3(cur))+(V?' V':' A');
+    bar.style.width=Math.round((cur-start)/total*100)+'%';
+    if(cur>=stop)break;
+    if(!await isleep(dly*1000,scanCtl))break;
+    cur+=step;
+  }
+  g(V?'svStat':'saStat').textContent=scanCtl.stop?'已停止':'完成';
+  g(V?'svRun':'saRun').disabled=false;g(V?'svStop':'saStop').disabled=true;
+  scanCtl.running=false;
+}
+function stopScan(silent){
+  scanCtl.stop=true;
+  if(!silent)toast('扫描已停止','warn');
+}
+$('#svRun').onclick=()=>runScan('V');$('#saRun').onclick=()=>runScan('A');
+$('#svStop').onclick=()=>stopScan();$('#saStop').onclick=()=>stopScan();
+
+/* ================================================================
+   自动序列
+   ================================================================ */
+const autoCtl={running:false,paused:false,stop:false,cyc:0,sn:0};
+let autoRows=Array.from({length:10},(_,i)=>({sn:i+1,V:(i+1)*2,A:1,S:1}));
+function autoTblRender(){
+  const tb=$('#autotbl tbody');tb.innerHTML='';
+  autoRows.forEach((r,i)=>{
+    const tr=document.createElement('tr');
+    tr.dataset.sn=r.sn;
+    tr.innerHTML=`<td>${r.sn}</td>
+      <td><input type="number" step="0.01" data-i="${i}" data-k="V" value="${r.V}"></td>
+      <td><input type="number" step="0.001" data-i="${i}" data-k="A" value="${r.A}"></td>
+      <td><input type="number" step="0.5" min="0.2" data-i="${i}" data-k="S" value="${r.S}"></td>`;
+    tb.appendChild(tr);
+  });
+  markCurSn();
+}
+function markCurSn(){
+  $$('#autotbl tbody tr').forEach(tr=>tr.classList.toggle('cur',autoCtl.running&&+tr.dataset.sn===autoCtl.sn));
+}
+$('#autotbl').addEventListener('change',e=>{
+  const inp=e.target;if(!inp.dataset.k)return;
+  autoRows[+inp.dataset.i][inp.dataset.k]=+inp.value||0;
+  localStorage.setItem('dps150.table',JSON.stringify(autoRows));
+});
+(function(){ // 载入本机保存的步序表
+  try{const s=localStorage.getItem('dps150.table');if(s){const a=JSON.parse(s);if(Array.isArray(a)&&a.length===10)autoRows=a}}catch(e){}
+})();
+function autoBar(){
+  const cyc=+$('#auCyc').value||1,s0=+$('#auS0').value||1,s1=+$('#auS1').value||10;
+  const done=(autoCtl.cyc-1)*Math.max(1,s1-s0+1)+(autoCtl.sn-s0+1);
+  const total=cyc*Math.max(1,s1-s0+1);
+  $('#auBar').style.width=Math.min(100,Math.round(done/total*100))+'%';
+  $('#auCurSn').textContent=autoCtl.sn||'--';
+  $('#auCurCyc').textContent=autoCtl.cyc||'--';
+  markCurSn();
+}
+async function autoApplyRow(sn){
+  const r=autoRows[sn-1];if(!r)return;
+  await send(CMD.SET_V,r.V);await sleep(60);
+  await send(CMD.SET_A,r.A);
+  dev.vset=r.V;dev.aset=r.A;render();
+  await isleep(Math.max(.2,r.S)*1000,autoCtl);
+}
+async function autoRun(){
+  if(autoCtl.running)return;
+  if(!dev.linked&&!dev.demo)return toast('请先联机','warn');
+  const cyc=Math.max(1,+$('#auCyc').value||1);
+  const s0=Math.min(10,Math.max(1,+$('#auS0').value||1));
+  let s1=Math.min(10,Math.max(1,+$('#auS1').value||10));
+  if(s1<s0)s1=s0;
+  autoCtl.running=true;autoCtl.paused=false;autoCtl.stop=false;autoCtl.cyc=1;autoCtl.sn=s0;
+  $('#auRun').disabled=true;$('#auPause').disabled=false;$('#auStop').disabled=false;$('#auResume').disabled=true;
+  $('#auSt').textContent='运行中';
+  if($('#auOut').classList.contains('checked'))await send(CMD.OUT_ON);
+  outer:
+  for(;autoCtl.cyc<=cyc&&!autoCtl.stop;autoCtl.cyc++){
+    for(autoCtl.sn=s0;autoCtl.sn<=s1;autoCtl.sn++){
+      while(autoCtl.paused&&!autoCtl.stop)await sleep(100);
+      if(autoCtl.stop||!dev.linked)break outer;
+      autoBar();                      // 进入该步即刷新进度
+      await autoApplyRow(autoCtl.sn);
+      autoBar();
+    }
+  }
+  $('#auSt').textContent=autoCtl.stop?'已停止':'完成';
+  autoCtl.running=false;autoCtl.paused=false;
+  $('#auRun').disabled=false;$('#auPause').disabled=true;$('#auResume').disabled=true;$('#auStop').disabled=true;
+  setTimeout(markCurSn,50);
+}
+function autoPause(){autoCtl.paused=true;$('#auPause').disabled=true;$('#auResume').disabled=false;$('#auSt').textContent='已暂停'}
+function autoResume(){autoCtl.paused=false;$('#auPause').disabled=false;$('#auResume').disabled=true;$('#auSt').textContent='运行中'}
+function autoStop(){autoCtl.stop=true;autoCtl.paused=false}
+$('#auRun').onclick=autoRun;$('#auPause').onclick=autoPause;
+$('#auResume').onclick=autoResume;$('#auStop').onclick=autoStop;
+$('#auStep').onclick=async()=>{
+  if(autoCtl.running)return toast('运行中无法单步','warn');
+  if(!dev.linked&&!dev.demo)return toast('请先联机','warn');
+  const s0=Math.min(10,Math.max(1,+$('#auS0').value||1));
+  let s1=Math.min(10,Math.max(1,+$('#auS1').value||10));if(s1<s0)s1=s0;
+  if(!autoCtl.cyc){autoCtl.cyc=1;autoCtl.sn=s0}
+  if(autoCtl.sn>s1){autoCtl.cyc++;autoCtl.sn=s0}
+  autoCtl.running=true;$('#auSt').textContent='单步';
+  await autoApplyRow(autoCtl.sn);autoBar();
+  autoCtl.sn++;autoCtl.running=false;$('#auSt').textContent='就绪';
+  setTimeout(markCurSn,50);
+};
+
+/* ================================================================
+   控件绑定
+   ================================================================ */
+// 导航
+$$('nav button').forEach(b=>b.onclick=()=>{
+  $$('nav button').forEach(x=>x.classList.remove('active'));b.classList.add('active');
+  $$('.view').forEach(v=>v.classList.remove('active'));
+  $('#view-'+b.dataset.v).classList.add('active');
+  if(b.dataset.v==='chart')drawChart();
+});
+// 连接
+$('#connbtn').onclick=doConnect;
+$('#refreshports').onclick=refreshPorts;
+$('#demosw').onclick=()=>{
+  const on=!$('#demosw').classList.contains('checked');
+  $('#demosw').classList.toggle('checked',on);
+  if(dev.linked)doDisconnect();
+  dev.demo=on;
+  toast(on?'演示模式已开启：点击「联机」连接虚拟设备':'演示模式已关闭','ok');
+  renderConn();
+};
+async function refreshPorts(){
+  const sel=$('#portsel');sel.innerHTML='';
+  if(!('serial'in navigator)){sel.innerHTML='<option value="">（不支持）</option>';return}
+  const ports=await navigator.serial.getPorts();
+  if(!ports.length){sel.innerHTML='<option value="">— 点击「联机」选择 —</option>';return}
+  for(const p of ports){
+    const i=p.getInfo();
+    const label='USB '+(('0000'+(i.usbVendorId||0).toString(16)).slice(-4))+':'+(('0000'+(i.usbProductId||0).toString(16)).slice(-4));
+    sel.innerHTML+=`<option>${label}</option>`;
+  }
+}
+// 输出开关
+$('#outbig').onclick=async()=>{
+  if(!dev.linked)return toast('未连接设备','warn');
+  if(dev.output){await send(CMD.OUT_OFF);dev.output=false}
+  else{
+    await send(CMD.OUT_ON);
+    await sleep(80);await send(CMD.SET_V,dev.vset);await sleep(60);await send(CMD.SET_A,dev.aset);
+    dev.output=true;
+  }
+  renderConn();render();
+};
+// 设定步进器
+function bindSetter(id,fn,maxGet,fmt){
+  const box=$(id),inp=box.querySelector('input');
+  box.addEventListener('click',async e=>{
+    const b=e.target.closest('.step');
+    if(b){
+      const d=+b.dataset.d;
+      let v=(+inp.value||0)+d;
+      v=Math.min(maxGet(),Math.max(0,v));
+      inp.value=fmt(v);
+      await send(fn,v);
+    }else if(e.target.closest('.go'))await send(fn,Math.min(maxGet(),Math.max(0,+inp.value||0)));
+  });
+  inp.addEventListener('keydown',async e=>{
+    if(e.key==='Enter')await send(fn,Math.min(maxGet(),Math.max(0,+inp.value||0)));
+  });
+}
+bindSetter('#setV',CMD.SET_V,()=>dev.vmax,F2);
+bindSetter('#setA',CMD.SET_A,()=>dev.amax,F3);
+// 计量开关 / 亮度
+$('#meassw').onclick=async()=>{
+  if(!dev.linked)return toast('未连接设备','warn');
+  dev.measOn=!dev.measOn;
+  await send(dev.measOn?CMD.MEAS_ON:CMD.MEAS_OFF);
+  render();
+};
+let briT=null;
+$('#brirange').oninput=e=>{
+  $('#briv').textContent=e.target.value;
+  clearTimeout(briT);
+  briT=setTimeout(()=>send(CMD.SET_BRIGHT,+e.target.value),180);
+};
+// 保护
+$('#protWr').onclick=async()=>{
+  if(!dev.linked)return toast('未连接设备','warn');
+  const vals={};
+  $$('#protfrm input[data-k]').forEach(i=>vals[i.dataset.k]=+i.value||0);
+  for(const k of ['ovp','ocp','otp','lvp','opp']){
+    if(vals[k]>0){await send(CMD.PROT[k],vals[k]);await sleep(70)}
+  }
+  await sleep(200);
+  await send(CMD.GET_ALL);          // 回读确认
+  toast('保护阈值已写入','ok');
+};
+$('#protRd').onclick=$('#infoRd').onclick=async()=>{
+  if(!dev.linked)return toast('未连接设备','warn');
+  await send(CMD.GET_ALL);toast('已请求设备参数','ok');
+};
+// 固件 BOOT
+$('#bootbtn').onclick=()=>{
+  modal('进入 BOOT 模式','设备将中断当前输出并进入固件升级模式。\\n确认负载已断开或安全？',async()=>{
+    await send(CMD.BOOT);
+    toast('已发送 BOOT 命令，请将固件放入U盘','warn');
+    await sleep(300);doDisconnect();
+  });
+};
+// 开关组件（通用）
+document.addEventListener('click',e=>{
+  const sw=e.target.closest('.switch');
+  if(sw&&!sw.closest('#demosw')&&!sw.closest('#meassw'))sw.classList.toggle('checked');
+});
+// 控制台
+function clog(cls,txt){
+  const box=$('#conlog');
+  const d=document.createElement('div');
+  d.className=cls;
+  const t=new Date(),p=n=>('0'+n).slice(-2);
+  d.innerHTML=`<span class="ts">${p(t.getHours())}:${p(t.getMinutes())}:${p(t.getSeconds())}</span>${txt}`;
+  if((cls==='tx'&&!$('#fTx').checked)||(cls==='rx'&&!$('#fRx').checked))d.style.display='none';
+  box.appendChild(d);
+  while(box.children.length>400)box.firstChild.remove();
+  if(!followOff)box.scrollTop=box.scrollHeight;
+}
+let followOff=false;
+$('#conlog').addEventListener('scroll',()=>{followOff=$('#conlog').scrollTop+$('#conlog').clientHeight<$('#conlog').scrollHeight-30});
+$('#conclr').onclick=()=>$('#conlog').innerHTML='';
+$('#confold').onclick=()=>{
+  const f=$('#confoot');f.classList.toggle('folded');
+  $('#confold').textContent=f.classList.contains('folded')?'▼ 展开':'▲ 折叠';
+};
+function applyFilter(){
+  $$('#conlog > div').forEach(d=>{
+    d.style.display=(d.classList.contains('tx')&&!$('#fTx').checked)||(d.classList.contains('rx')&&!$('#fRx').checked)?'none':'';
+  });
+}
+$('#fTx').onchange=applyFilter;$('#fRx').onchange=applyFilter;
+// toast / modal
+function toast(msg,cls){
+  const t=document.createElement('div');
+  t.className='toast '+(cls||'');t.textContent=msg;
+  $('#toasts').appendChild(t);
+  setTimeout(()=>{t.style.opacity='0';t.style.transition='opacity .3s';setTimeout(()=>t.remove(),320)},3200);
+}
+let modalCb=null;
+function modal(title,body,cb){
+  $('#mTitle').textContent=title;$('#mBody').innerHTML=body.replace(/\n/g,'<br>');
+  $('#modalbg').classList.add('show');modalCb=cb;
+}
+$('#mNo').onclick=()=>$('#modalbg').classList.remove('show');
+$('#mYes').onclick=()=>{$('#modalbg').classList.remove('show');modalCb&&modalCb()};
+// 时钟
+setInterval(()=>{
+  const d=new Date(),p=n=>('0'+n).slice(-2);
+  $('#clock').textContent=`${d.getFullYear()}/${p(d.getMonth()+1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+},500);
+
+/* ================================================================
+   初始化
+   ================================================================ */
+if(!('serial'in navigator))$('#noserial').style.display='block';
+navigator.serial&&navigator.serial.addEventListener('disconnect',e=>{if(dev.linked&&!dev.demo)onUnplug()});
+refreshPorts();
+autoTblRender();
+renderConn();render();drawChart();
+clog('in','FNIRSI DPS-150 控制台已启动 · 协议逆向自官方上位机 v2.0.2.3');
+window.dev=dev;window.CMD=CMD;      // 调试入口
+clog('in','提示：Chrome / Edge 下点击「联机」选择串口；无设备时可开启右上角「演示模式」');
+window.addEventListener('resize',()=>drawChart());
+</script>
+</body>
+</html>
