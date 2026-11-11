@@ -22,6 +22,12 @@
   --txt-dim:#5f8ba1;
   --mono:'Consolas','Courier New',monospace;
   --ui:'Segoe UI','Microsoft YaHei',system-ui,sans-serif;
+  /* 画布主题色（现代主题会覆盖） */
+  --gauge-v:#00e5ff;--gauge-v2:#00ffa3;--gauge-mark:#ffb300;
+  --gauge-txt:#eaffff;--gauge-sub:rgba(95,139,161,.9);--gauge-track:rgba(20,50,75,.9);
+  --gauge-tick-hi:rgba(0,229,255,.5);--gauge-tick-lo:rgba(0,229,255,.22);
+  --chart-v:#00e5ff;--chart-a:#ffb300;
+  --chart-grid:rgba(0,229,255,.08);--chart-txt:#4a718c;--chart-txt2:#8a6d1f;--chart-dim:#31536a;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%}
@@ -70,20 +76,6 @@ header{
 #clock{font-family:var(--mono);font-size:13px;color:var(--txt-dim);letter-spacing:1px;white-space:nowrap}
 
 #body{flex:1;display:flex;min-height:0}
-nav{
-  width:118px;padding:10px 0;display:flex;flex-direction:column;gap:6px;
-  border-right:1px solid var(--line);background:rgba(5,13,24,.6);
-}
-nav button{
-  all:unset;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:5px;
-  padding:10px 4px;color:var(--txt-dim);font-size:12px;letter-spacing:1px;
-  border-left:2px solid transparent;transition:all .15s;
-}
-nav button svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.6}
-nav button:hover{color:var(--cyan)}
-nav button.active{color:var(--cyan);border-left-color:var(--cyan);background:linear-gradient(90deg,rgba(0,229,255,.12),transparent);text-shadow:0 0 8px rgba(0,229,255,.6)}
-nav .spacer{flex:1}
-nav .ver{font-size:10px;color:#31536a;text-align:center;padding:6px;font-family:var(--mono)}
 
 main{flex:1;overflow:hidden auto;padding:14px;scrollbar-width:thin;scrollbar-color:#14405c transparent}
 main::-webkit-scrollbar{width:8px}
@@ -91,6 +83,27 @@ main::-webkit-scrollbar-thumb{background:#14405c;border-radius:4px}
 .view{display:none;animation:fadein .25s ease}
 .view.active{display:block}
 @keyframes fadein{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* ---------- 双栏：主区 + 右侧设备控制 ---------- */
+.dashgrid{display:grid;grid-template-columns:1fr clamp(340px,26vw,400px);gap:16px;align-items:start}
+.maincol{min-width:0}
+.sidecol{position:sticky;top:14px;min-width:0}
+#ctrlpanel{display:flex;flex-direction:column;max-height:calc(100vh - 92px);padding-bottom:14px}
+.tabbar{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;flex:none}
+.tabbtn{
+  all:unset;cursor:pointer;text-align:center;padding:9px 2px;font-size:12px;letter-spacing:1px;
+  color:var(--txt-dim);border:1px solid var(--line);background:rgba(0,22,38,.5);
+  transition:.15s;user-select:none;white-space:nowrap;
+}
+.tabbtn:hover{color:var(--txt);border-color:var(--line-hi)}
+.tabbtn.active{color:var(--cyan);border-color:var(--line-hi);background:rgba(0,229,255,.1);box-shadow:inset 0 0 12px rgba(0,229,255,.12);text-shadow:0 0 8px rgba(0,229,255,.5)}
+.tp{display:none;min-height:0;overflow:auto;scrollbar-width:thin;scrollbar-color:#14405c transparent}
+.tp.active{display:block}
+.shead{
+  font-size:11px;letter-spacing:2px;color:var(--cyan);text-shadow:0 0 8px rgba(0,229,255,.4);
+  border-left:3px solid var(--cyan);padding-left:8px;margin:16px 0 4px;white-space:nowrap;
+}
+.tp .shead:first-child{margin-top:2px}
 
 /* ---------- panels ---------- */
 .panel{
@@ -138,8 +151,11 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
 .swrow{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--txt-dim)}
 
 /* ---------- dashboard ---------- */
-#dash-top{grid-template-columns:1fr 1fr 340px;margin-bottom:14px}
-.gaugebox{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 8px 8px}
+#dash-top{grid-template-columns:minmax(240px,1fr) minmax(240px,1fr) minmax(430px,1.25fr) minmax(185px,.72fr);margin-bottom:14px}
+#dash-top #outctl{grid-column:3}
+#dash-top .metercol{grid-column:4;grid-row:1}
+#dash-top .metercol .stat3{grid-template-columns:1fr;gap:6px;margin-bottom:0;height:100%;align-content:space-evenly}
+.gaugebox{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 8px 8px;max-width:430px;width:100%;margin:0 auto}
 .gaugebox canvas{display:block}
 .g-lbl{font-size:12px;letter-spacing:4px;color:var(--txt-dim);margin-top:-6px}
 .g-sub{font-size:11px;color:var(--txt-dim);font-family:var(--mono);margin-top:2px}
@@ -171,7 +187,18 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
 .badge.alarm{border-color:var(--red);color:var(--red);text-shadow:0 0 10px rgba(255,61,90,.7);animation:pulse .8s infinite}
 .badge.dim{color:var(--txt-dim)}
 
-#dash-mid{grid-template-columns:1fr 1fr 1fr;margin-bottom:14px}
+#dash-mid{margin-bottom:14px}
+#outctl #outbig{margin:2px 0 10px}
+#outctl .badges{justify-content:flex-start}
+.ctlset{margin-top:10px}
+.ctlset .row{margin-top:0}
+.ctlset .clbl{font-size:12px;color:var(--txt-dim);letter-spacing:2px;white-space:nowrap}
+.ctlset .steps{display:flex;gap:4px;flex-wrap:wrap;margin-left:auto}
+.ctlset .step{width:30px;height:28px;font-size:10.5px}
+.msw{display:grid;gap:10px}
+.mlbl{white-space:nowrap;letter-spacing:1px}
+.mval{font-family:var(--mono);min-width:24px;text-align:right;color:var(--cyan)}
+.swrow input[type=range]{flex:1;min-width:140px}
 .setter .row{display:flex;flex-wrap:wrap;align-items:center;gap:4px;margin-top:10px}
 .setter .row input{width:90px;text-align:center;font-size:16px;font-weight:700;color:#e9fdff}
 .setter .row .go{padding:6px 10px}
@@ -187,23 +214,29 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
 input[type=range]{-webkit-appearance:none;width:100%;height:4px;background:linear-gradient(90deg,var(--cyan-dim),var(--cyan));outline:none;border-radius:2px}
 input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;background:var(--cyan);cursor:pointer;clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%);box-shadow:0 0 8px var(--cyan)}
 
-#groups{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}
-.gcard{border:1px solid var(--line);background:rgba(0,18,32,.6);padding:9px 10px;position:relative;transition:.15s}
-.gcard:hover{border-color:var(--line-hi)}
-.gcard .gn{font-size:10px;letter-spacing:2px;color:var(--txt-dim)}
-.gcard .gv{font-family:var(--mono);font-size:16px;font-weight:700;color:#e9fdff;margin-top:4px}
-.gcard .gv.a{color:var(--amber)}
-.gcard .gbtns{display:flex;gap:5px;margin-top:8px}
-.gcard .gbtns .btn{flex:1;padding:3px 0;font-size:11px}
-@media (max-width:1250px){#groups{grid-template-columns:repeat(3,1fr)}#dash-top{grid-template-columns:1fr 1fr}#dash-mid{grid-template-columns:1fr 1fr}.auto-two{grid-template-columns:1fr}}
-@media (max-width:880px){#dash-top{grid-template-columns:1fr}#dash-mid{grid-template-columns:1fr}.two{grid-template-columns:1fr}#groups{grid-template-columns:repeat(2,1fr)}}
+#groups{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.gcard{border:1px solid var(--line);background:rgba(0,18,32,.6);padding:10px 12px;position:relative;transition:.15s;cursor:pointer}
+.gcard:hover{border-color:var(--line-hi);box-shadow:0 0 14px rgba(0,229,255,.12)}
+.gcard:active{transform:scale(.985)}
+.gcard .gtop{display:flex;justify-content:flex-end;align-items:center;gap:6px}
+.gcard .gm{font-size:10px;letter-spacing:1px;color:var(--txt-dim);border:1px solid var(--line);padding:1px 6px}
+.gcard .gsave{all:unset;cursor:pointer;font-size:10px;color:var(--txt-dim);border:1px solid var(--line);padding:1px 7px;transition:.12s}
+.gcard .gsave:hover{color:var(--cyan);border-color:var(--line-hi);box-shadow:0 0 8px rgba(0,229,255,.25)}
+.gcard .gv{font-family:var(--mono);font-size:21px;font-weight:700;color:#e9fdff;margin-top:6px;white-space:nowrap}
+.gcard .gv small{font-size:11px;font-weight:400;color:var(--txt-dim);margin-left:2px}
+.gcard .ga{font-family:var(--mono);font-size:13px;color:var(--amber);margin-top:1px;white-space:nowrap}
+@media (max-width:1700px){#dash-top{grid-template-columns:minmax(240px,1fr) minmax(240px,1fr) minmax(185px,.72fr)}#dash-top #outctl{grid-column:1/-1}#dash-top .metercol{grid-column:3}}
+@media (max-width:1150px){.dashgrid{grid-template-columns:1fr}.sidecol{position:static}}
+@media (max-width:880px){#dash-top{grid-template-columns:1fr}#dash-top #outctl{grid-column:auto}#dash-top .metercol{grid-column:auto;grid-row:auto}.metercol .stat3{grid-template-columns:repeat(3,1fr);gap:8px;height:auto}}
 
 /* ---------- chart ---------- */
-#chartwrap{position:relative;height:56vh;min-height:340px}
+#chartwrap{position:relative;height:clamp(240px,32vh,360px)}
 #chart{width:100%;height:100%;display:block}
 #chartctl{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:12px}
 .legend{display:flex;gap:14px;font-size:12px;font-family:var(--mono);color:var(--txt-dim);margin-left:auto}
 .legend i{display:inline-block;width:16px;height:3px;vertical-align:middle;margin-right:5px}
+.legend .sw-v{background:var(--chart-v)}
+.legend .sw-a{background:var(--chart-a)}
 
 /* ---------- scan / auto ---------- */
 .two{grid-template-columns:1fr 1fr}
@@ -239,6 +272,24 @@ footer.folded{height:30px}
 #conlog .ts{color:#3b5d73;margin-right:8px}
 footer.folded #conlog{display:none}
 
+/* social links */
+#social{display:flex;align-items:center;gap:8px;margin-left:auto;min-width:0}
+#social .slbl{font-size:10.5px;letter-spacing:2px;color:var(--txt-dim);white-space:nowrap}
+#social a{
+  all:unset;cursor:pointer;display:flex;align-items:center;gap:5px;padding:2px 10px;font-size:11px;
+  letter-spacing:1px;color:var(--txt-dim);border:1px solid var(--line);background:rgba(0,22,38,.5);
+  transition:.15s;white-space:nowrap;
+}
+#social a svg{width:13px;height:13px;fill:currentColor;flex:none}
+#social a:hover{color:var(--txt);border-color:var(--line-hi)}
+#social a.dy:hover{color:#25f4ee;border-color:rgba(37,244,238,.55);box-shadow:0 0 10px rgba(37,244,238,.2)}
+#social a.bili:hover{color:#fb7299;border-color:rgba(251,114,153,.55);box-shadow:0 0 10px rgba(251,114,153,.2)}
+#social a.xhs:hover{color:#ff2442;border-color:rgba(255,36,66,.55);box-shadow:0 0 10px rgba(255,36,66,.2)}
+body[data-theme=modern] #social a{background:#f1f5f9;border-color:#e2e8f0;border-radius:8px}
+body[data-theme=modern] #social a:hover{color:#2563eb;border-color:#93c5fd;box-shadow:0 2px 8px rgba(37,99,235,.12)}
+body[data-theme=macos] #social a{background:rgba(255,255,255,.55);border-color:rgba(255,255,255,.7);border-radius:999px;backdrop-filter:blur(8px)}
+body[data-theme=macos] #social a:hover{color:#0a84ff;border-color:rgba(10,132,255,.4);box-shadow:0 2px 8px rgba(10,132,255,.14)}
+
 /* ---------- toasts / modal ---------- */
 #toasts{position:fixed;top:66px;right:16px;z-index:50;display:flex;flex-direction:column;gap:8px}
 .toast{
@@ -265,12 +316,252 @@ footer.folded #conlog{display:none}
 .infogrid b{font-family:var(--mono);color:#e9fdff;font-weight:400;text-align:right}
 kbd{font-family:var(--mono);border:1px solid var(--line);padding:0 5px;font-size:11px;color:var(--cyan)}
 #noserial{display:none;margin-bottom:14px;border-color:rgba(255,179,0,.5)}
+
+/* ================================================================
+   现代主题（浅色卡片风） body[data-theme=modern]
+   ================================================================ */
+body[data-theme=modern]{
+  --bg:#eef1f6;
+  --panel:#ffffff;
+  --panel2:#ffffff;
+  --line:rgba(148,163,184,.35);
+  --line-hi:rgba(37,99,235,.45);
+  --cyan:#2563eb;
+  --cyan-dim:#3b82f6;
+  --green:#059669;
+  --amber:#d97706;
+  --red:#dc2626;
+  --violet:#7c3aed;
+  --txt:#1e293b;
+  --txt-dim:#64748b;
+  --gauge-v:#2563eb;--gauge-v2:#60a5fa;--gauge-mark:#f59e0b;
+  --gauge-txt:#0f172a;--gauge-sub:rgba(100,116,139,.9);--gauge-track:rgba(148,163,184,.25);
+  --gauge-tick-hi:rgba(37,99,235,.45);--gauge-tick-lo:rgba(37,99,235,.18);
+  --chart-v:#2563eb;--chart-a:#f59e0b;
+  --chart-grid:rgba(37,99,235,.09);--chart-txt:#94a3b8;--chart-txt2:#b45309;--chart-dim:#94a3b8;
+}
+body[data-theme=modern] #bgfx{background:linear-gradient(180deg,#f8fafc,#eef1f6)}
+body[data-theme=modern] #scanfx,body[data-theme=modern] #sweepline{display:none}
+body[data-theme=modern] header{background:#fff;border-bottom-color:#e2e8f0;box-shadow:0 1px 3px rgba(15,23,42,.06)}
+body[data-theme=modern] #logo svg{filter:none}
+body[data-theme=modern] #logo svg polygon{stroke:#2563eb}
+body[data-theme=modern] #logo svg polygon:nth-child(2){fill:#2563eb}
+body[data-theme=modern] #logo .t1{color:#0f172a;text-shadow:none}
+body[data-theme=modern] #statuspill{background:#fff;clip-path:none;border-radius:999px;border-color:#e2e8f0}
+body[data-theme=modern] #statuspill .led{background:#cbd5e1}
+body[data-theme=modern] nav{background:#fff;border-right-color:#e2e8f0}
+body[data-theme=modern] nav button.active{background:#eff6ff;text-shadow:none}
+body[data-theme=modern] nav .ver{color:#94a3b8}
+body[data-theme=modern] main{scrollbar-color:#cbd5e1 transparent}
+body[data-theme=modern] main::-webkit-scrollbar-thumb{background:#cbd5e1}
+body[data-theme=modern] .panel{
+  clip-path:none;border-radius:12px;border-color:#e2e8f0;
+  box-shadow:0 1px 3px rgba(15,23,42,.05);backdrop-filter:none;
+}
+body[data-theme=modern] .panel::before{color:#2563eb;text-shadow:none}
+body[data-theme=modern] select,body[data-theme=modern] input[type=number],body[data-theme=modern] input[type=text]{
+  background:#fff;border-color:#cbd5e1;color:#1e293b;border-radius:8px;
+}
+body[data-theme=modern] select:focus,body[data-theme=modern] input:focus{border-color:#2563eb;box-shadow:0 0 0 3px rgba(37,99,235,.12)}
+body[data-theme=modern] .btn{
+  clip-path:none;border-radius:8px;background:#fff;border-color:#cbd5e1;color:#334155;
+  box-shadow:0 1px 2px rgba(15,23,42,.05);
+}
+body[data-theme=modern] .btn:hover{border-color:#2563eb;color:#2563eb;background:#fff;box-shadow:0 2px 8px rgba(37,99,235,.15)}
+body[data-theme=modern] .btn.primary{background:#2563eb;border-color:#2563eb;color:#fff;font-weight:600}
+body[data-theme=modern] .btn.primary:hover{background:#1d4ed8;color:#fff;box-shadow:0 2px 10px rgba(37,99,235,.35)}
+body[data-theme=modern] .btn.green{background:#059669;border-color:#059669;color:#fff;font-weight:600}
+body[data-theme=modern] .btn.green:hover{background:#047857;color:#fff;box-shadow:0 2px 10px rgba(5,150,105,.3)}
+body[data-theme=modern] .btn.danger{background:#fff;border-color:#fca5a5;color:#dc2626}
+body[data-theme=modern] .btn.danger:hover{background:#fef2f2;color:#dc2626;box-shadow:0 2px 8px rgba(220,38,38,.15)}
+body[data-theme=modern] .switch i{background:#e2e8f0;border-color:#cbd5e1;clip-path:none;border-radius:999px}
+body[data-theme=modern] .switch i::after{background:#94a3b8;clip-path:none;border-radius:50%}
+body[data-theme=modern] .switch.checked i{background:#dbeafe;border-color:#2563eb}
+body[data-theme=modern] .switch.checked i::after{background:#2563eb;box-shadow:none}
+body[data-theme=modern] #outbig{clip-path:none;border-radius:10px;border-color:#fca5a5;color:#dc2626;background:#fef2f2;animation:none;text-shadow:none}
+body[data-theme=modern] #outbig:hover{box-shadow:0 2px 10px rgba(220,38,38,.15)}
+body[data-theme=modern] #outbig.on{border-color:#34d399;color:#047857;background:#ecfdf5;animation:none}
+body[data-theme=modern] .badge{background:#f8fafc;border-color:#e2e8f0;border-radius:999px}
+body[data-theme=modern] .badge.ok{color:#047857;border-color:#a7f3d0;background:#ecfdf5;text-shadow:none}
+body[data-theme=modern] .badge.warn{color:#b45309;border-color:#fde68a;background:#fffbeb;text-shadow:none}
+body[data-theme=modern] .badge.alarm{color:#dc2626;border-color:#fecaca;background:#fef2f2;text-shadow:none}
+body[data-theme=modern] .badge.dim{color:#64748b}
+body[data-theme=modern] .setter .row input{color:#0f172a}
+body[data-theme=modern] .step{background:#fff;border-color:#cbd5e1;color:#334155;border-radius:8px}
+body[data-theme=modern] .step:hover{border-color:#2563eb;color:#2563eb;background:#eff6ff}
+body[data-theme=modern] .stat3 .v{color:#0f172a;text-shadow:none}
+body[data-theme=modern] input[type=range]{background:#dbe3ef}
+body[data-theme=modern] input[type=range]::-webkit-slider-thumb{background:#2563eb;clip-path:none;border-radius:50%;box-shadow:0 1px 4px rgba(37,99,235,.5)}
+body[data-theme=modern] .gcard{background:#f8fafc;border-color:#e2e8f0;border-radius:10px}
+body[data-theme=modern] .gcard:hover{border-color:#93c5fd;box-shadow:0 2px 10px rgba(37,99,235,.1)}
+body[data-theme=modern] .gcard .gv{color:#0f172a}
+body[data-theme=modern] .gcard .gv small{color:#94a3b8}
+body[data-theme=modern] .gcard .ga{color:#475569}
+body[data-theme=modern] .gcard .gsave:hover{color:#2563eb;box-shadow:none}
+body[data-theme=modern] .prog{background:#e2e8f0;border-color:transparent;border-radius:999px}
+body[data-theme=modern] .prog i{background:linear-gradient(90deg,#2563eb,#34d399);box-shadow:none}
+body[data-theme=modern] th{background:#f8fafc;color:#334155}
+body[data-theme=modern] th,body[data-theme=modern] td{border-color:#e2e8f0}
+body[data-theme=modern] td input{color:#0f172a}
+body[data-theme=modern] td input:focus{background:#eff6ff}
+body[data-theme=modern] tr.cur{background:#eff6ff}
+body[data-theme=modern] tr.cur td:first-child{color:#2563eb;text-shadow:none}
+body[data-theme=modern] footer{background:#fff;border-top-color:#e2e8f0}
+body[data-theme=modern] #conbar{border-bottom-color:#f1f5f9}
+body[data-theme=modern] #conbar .t{color:#2563eb}
+body[data-theme=modern] #conlog{scrollbar-color:#cbd5e1 transparent}
+body[data-theme=modern] #conlog .tx{color:#2563eb}
+body[data-theme=modern] #conlog .rx{color:#059669}
+body[data-theme=modern] #conlog .in{color:#64748b}
+body[data-theme=modern] #conlog .ts{color:#94a3b8}
+body[data-theme=modern] .toast{background:#fff;border-radius:10px;clip-path:none;color:#1e293b;box-shadow:0 4px 16px rgba(15,23,42,.12);border-color:#cbd5e1}
+body[data-theme=modern] .toast.ok{border-color:#6ee7b7}
+body[data-theme=modern] .toast.warn{border-color:#fcd34d}
+body[data-theme=modern] .toast.err{border-color:#fca5a5;box-shadow:0 4px 16px rgba(220,38,38,.15)}
+body[data-theme=modern] #modalbg{background:rgba(15,23,42,.35)}
+body[data-theme=modern] #modal{background:#fff;border-color:#e2e8f0;clip-path:none;border-radius:14px;box-shadow:0 10px 40px rgba(15,23,42,.18)}
+body[data-theme=modern] #modal h3{color:#2563eb}
+body[data-theme=modern] .infogrid b{color:#0f172a}
+body[data-theme=modern] .tabbtn{background:#f1f5f9;border-color:#e2e8f0;border-radius:8px;color:#64748b;box-shadow:none;text-shadow:none}
+body[data-theme=modern] .tabbtn:hover{color:#0f172a;border-color:#93c5fd}
+body[data-theme=modern] .tabbtn.active{background:#fff;color:#2563eb;border-color:#93c5fd;box-shadow:0 2px 8px rgba(37,99,235,.14);text-shadow:none}
+body[data-theme=modern] .shead{color:#2563eb;text-shadow:none;border-left-color:#2563eb}
+
+/* ================================================================
+   macOS 主题（毛玻璃 Liquid Glass 风） body[data-theme=macos]
+   ================================================================ */
+body[data-theme=macos]{
+  --bg:#e8edf6;
+  --panel:rgba(255,255,255,.55);
+  --panel2:rgba(248,250,253,.9);
+  --line:rgba(255,255,255,.55);
+  --line-hi:rgba(10,132,255,.5);
+  --cyan:#0A84FF;
+  --cyan-dim:#409CFF;
+  --green:#30D158;
+  --amber:#FF9F0A;
+  --red:#FF453A;
+  --violet:#BF5AF2;
+  --txt:#1d1d1f;
+  --txt-dim:rgba(60,60,67,.62);
+  --gauge-v:#0A84FF;--gauge-v2:#5AC8FA;--gauge-mark:#FF9F0A;
+  --gauge-txt:#1d1d1f;--gauge-sub:rgba(60,60,67,.7);--gauge-track:rgba(110,130,160,.28);
+  --gauge-tick-hi:rgba(10,132,255,.5);--gauge-tick-lo:rgba(10,132,255,.2);
+  --chart-v:#0A84FF;--chart-a:#FF9F0A;
+  --chart-grid:rgba(10,132,255,.1);--chart-txt:rgba(60,60,67,.65);--chart-txt2:#b25f09;--chart-dim:rgba(60,60,67,.6);
+  font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','PingFang SC','Segoe UI','Microsoft YaHei',sans-serif;
+}
+body[data-theme=macos] #bgfx{
+  background:
+    radial-gradient(75% 55% at 12% 8%,rgba(125,211,252,.75) 0%,transparent 52%),
+    radial-gradient(65% 55% at 88% 12%,rgba(196,181,253,.7) 0%,transparent 55%),
+    radial-gradient(80% 65% at 80% 92%,rgba(249,168,212,.6) 0%,transparent 55%),
+    radial-gradient(65% 55% at 15% 88%,rgba(110,231,183,.55) 0%,transparent 52%),
+    linear-gradient(160deg,#dbeafe,#ede9fe 48%,#fce7f3);
+  background-attachment:fixed;
+}
+body[data-theme=macos] #scanfx,body[data-theme=macos] #sweepline{display:none}
+#macdots{display:none;gap:8px;align-items:center;margin-right:4px}
+#macdots i{width:13px;height:13px;border-radius:50%;box-shadow:inset 0 -1px 2px rgba(0,0,0,.18),0 1px 3px rgba(31,41,55,.2)}
+#macdots i.r{background:#FF5F57}#macdots i.y{background:#FEBC2E}#macdots i.g{background:#28C840}
+body[data-theme=macos] #macdots{display:flex}
+body[data-theme=macos] header{
+  background:rgba(255,255,255,.5);backdrop-filter:blur(24px) saturate(1.6);
+  border-bottom-color:rgba(255,255,255,.55);box-shadow:0 1px 14px rgba(31,41,55,.08);
+}
+body[data-theme=macos] #logo svg{filter:none}
+body[data-theme=macos] #logo svg polygon{stroke:#0A84FF}
+body[data-theme=macos] #logo svg polygon:nth-child(2){fill:#0A84FF}
+body[data-theme=macos] #logo .t1{color:#1d1d1f;text-shadow:none}
+body[data-theme=macos] #statuspill{background:rgba(255,255,255,.6);clip-path:none;border-radius:999px;border-color:rgba(255,255,255,.7);backdrop-filter:blur(12px)}
+body[data-theme=macos] #statuspill .led{background:#c3c8d4}
+body[data-theme=macos] nav{background:rgba(255,255,255,.38);backdrop-filter:blur(24px) saturate(1.6);border-right-color:rgba(255,255,255,.5)}
+body[data-theme=macos] nav button.active{color:#0A84FF;border-left-color:#0A84FF;background:rgba(10,132,255,.13);text-shadow:none;border-radius:10px 0 0 10px}
+body[data-theme=macos] nav .ver{color:rgba(60,60,67,.5)}
+body[data-theme=macos] main{scrollbar-color:rgba(140,150,170,.6) transparent}
+body[data-theme=macos] main::-webkit-scrollbar-thumb{background:rgba(140,150,170,.6);border-radius:4px}
+body[data-theme=macos] .panel{
+  clip-path:none;border-radius:16px;background:rgba(255,255,255,.55);
+  border:1px solid rgba(255,255,255,.65);
+  box-shadow:0 8px 32px rgba(31,41,55,.12),inset 0 1px 0 rgba(255,255,255,.8);
+  backdrop-filter:blur(24px) saturate(1.6);
+}
+body[data-theme=macos] .panel::before{color:#0A84FF;text-shadow:none;font-weight:600;letter-spacing:2px}
+body[data-theme=macos] select,body[data-theme=macos] input[type=number],body[data-theme=macos] input[type=text]{
+  background:rgba(255,255,255,.75);border-color:rgba(255,255,255,.9);color:#1d1d1f;border-radius:10px;
+}
+body[data-theme=macos] select:focus,body[data-theme=macos] input:focus{border-color:#0A84FF;box-shadow:0 0 0 3.5px rgba(10,132,255,.25)}
+body[data-theme=macos] .btn{
+  clip-path:none;border-radius:999px;background:rgba(255,255,255,.72);
+  border-color:rgba(255,255,255,.9);color:#1d1d1f;font-weight:500;letter-spacing:1px;
+  box-shadow:0 1px 4px rgba(31,41,55,.12),inset 0 1px 0 rgba(255,255,255,.8);
+}
+body[data-theme=macos] .btn:hover{border-color:#0A84FF;color:#0A84FF;box-shadow:0 2px 10px rgba(10,132,255,.2)}
+body[data-theme=macos] .btn.primary{background:#0A84FF;border-color:#0A84FF;color:#fff}
+body[data-theme=macos] .btn.primary:hover{background:#0071E3;color:#fff;box-shadow:0 3px 12px rgba(10,132,255,.4)}
+body[data-theme=macos] .btn.green{background:#30D158;border-color:#30D158;color:#fff}
+body[data-theme=macos] .btn.green:hover{background:#28b84c;color:#fff;box-shadow:0 3px 12px rgba(48,209,88,.35)}
+body[data-theme=macos] .btn.danger{background:rgba(255,69,58,.12);border-color:rgba(255,69,58,.45);color:#FF453A}
+body[data-theme=macos] .btn.danger:hover{background:rgba(255,69,58,.18);color:#e0362c;box-shadow:0 2px 10px rgba(255,69,58,.2)}
+body[data-theme=macos] .switch i{background:rgba(120,120,128,.3);border:none;clip-path:none;border-radius:999px}
+body[data-theme=macos] .switch i::after{width:18px;height:18px;top:2px;left:2px;background:#fff;border-radius:50%;box-shadow:0 1px 3px rgba(0,0,0,.3);clip-path:none}
+body[data-theme=macos] .switch.checked i{background:#30D158;border-color:transparent}
+body[data-theme=macos] .switch.checked i::after{left:24px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+body[data-theme=macos] #outbig{clip-path:none;border-radius:14px;border-color:rgba(255,69,58,.45);color:#e0362c;background:rgba(255,255,255,.6);backdrop-filter:blur(12px);animation:none;text-shadow:none;box-shadow:0 4px 16px rgba(31,41,55,.1),inset 0 1px 0 rgba(255,255,255,.8)}
+body[data-theme=macos] #outbig.on{border-color:rgba(48,209,88,.65);color:#1e9e43;background:rgba(48,209,88,.14)}
+body[data-theme=macos] .badge{background:rgba(255,255,255,.65);border-color:rgba(255,255,255,.8);border-radius:999px;backdrop-filter:blur(8px)}
+body[data-theme=macos] .badge.ok{color:#1e9e43;border-color:rgba(48,209,88,.5);background:rgba(48,209,88,.13);text-shadow:none}
+body[data-theme=macos] .badge.warn{color:#b25f09;border-color:rgba(255,159,10,.5);background:rgba(255,159,10,.13);text-shadow:none}
+body[data-theme=macos] .badge.alarm{color:#e0362c;border-color:rgba(255,69,58,.55);background:rgba(255,69,58,.12);text-shadow:none}
+body[data-theme=macos] .badge.dim{color:rgba(60,60,67,.6)}
+body[data-theme=macos] .setter .row input{color:#1d1d1f}
+body[data-theme=macos] .step{background:rgba(255,255,255,.72);border-color:rgba(255,255,255,.9);color:#1d1d1f;border-radius:9px;box-shadow:0 1px 3px rgba(31,41,55,.1)}
+body[data-theme=macos] .step:hover{border-color:#0A84FF;color:#0A84FF;background:#fff}
+body[data-theme=macos] .stat3 .v{color:#1d1d1f;text-shadow:none}
+body[data-theme=macos] input[type=range]{background:rgba(120,120,128,.25)}
+body[data-theme=macos] input[type=range]::-webkit-slider-thumb{background:#fff;border-radius:50%;clip-path:none;box-shadow:0 1px 5px rgba(0,0,0,.3),0 0 0 1px rgba(0,0,0,.06)}
+body[data-theme=macos] .gcard{background:rgba(255,255,255,.55);border-color:rgba(255,255,255,.7);border-radius:14px;backdrop-filter:blur(8px)}
+body[data-theme=macos] .gcard:hover{border-color:rgba(10,132,255,.55);box-shadow:0 4px 14px rgba(10,132,255,.12)}
+body[data-theme=macos] .gcard .gv{color:#1d1d1f}
+body[data-theme=macos] .gcard .gv small{color:#86868b}
+body[data-theme=macos] .gcard .ga{color:#3a3a3c}
+body[data-theme=macos] .gcard .gsave:hover{color:#0a84ff;box-shadow:0 2px 8px rgba(10,132,255,.18)}
+body[data-theme=macos] .prog{background:rgba(120,120,128,.22);border-color:transparent;border-radius:999px}
+body[data-theme=macos] .prog i{background:linear-gradient(90deg,#0A84FF,#5AC8FA);box-shadow:none}
+body[data-theme=macos] th{background:rgba(255,255,255,.5);color:#1d1d1f}
+body[data-theme=macos] th,body[data-theme=macos] td{border-color:rgba(140,150,170,.35)}
+body[data-theme=macos] td input{color:#1d1d1f}
+body[data-theme=macos] td input:focus{background:rgba(10,132,255,.1)}
+body[data-theme=macos] tr.cur{background:rgba(10,132,255,.1)}
+body[data-theme=macos] tr.cur td:first-child{color:#0A84FF;text-shadow:none}
+body[data-theme=macos] footer{background:rgba(255,255,255,.5);backdrop-filter:blur(24px) saturate(1.6);border-top-color:rgba(255,255,255,.55)}
+body[data-theme=macos] #conbar{border-bottom-color:rgba(140,150,170,.25)}
+body[data-theme=macos] #conbar .t{color:#0A84FF}
+body[data-theme=macos] #conlog{scrollbar-color:rgba(140,150,170,.6) transparent}
+body[data-theme=macos] #conlog .tx{color:#0A6EDD}
+body[data-theme=macos] #conlog .rx{color:#1e9e43}
+body[data-theme=macos] #conlog .in{color:rgba(60,60,67,.7)}
+body[data-theme=macos] #conlog .ts{color:rgba(60,60,67,.5)}
+body[data-theme=macos] .toast{background:rgba(255,255,255,.85);backdrop-filter:blur(20px);border-radius:14px;clip-path:none;color:#1d1d1f;box-shadow:0 10px 34px rgba(31,41,55,.2);border-color:rgba(255,255,255,.8)}
+body[data-theme=macos] .toast.ok{border-color:rgba(48,209,88,.6)}
+body[data-theme=macos] .toast.warn{border-color:rgba(255,159,10,.6)}
+body[data-theme=macos] .toast.err{border-color:rgba(255,69,58,.6)}
+body[data-theme=macos] #modalbg{background:rgba(30,35,50,.3);backdrop-filter:blur(6px)}
+body[data-theme=macos] #modal{background:rgba(248,250,253,.92);backdrop-filter:blur(30px) saturate(1.6);border-color:rgba(255,255,255,.8);clip-path:none;border-radius:18px;box-shadow:0 20px 60px rgba(31,41,55,.25)}
+body[data-theme=macos] #modal h3{color:#1d1d1f}
+body[data-theme=macos] .infogrid b{color:#1d1d1f}
+body[data-theme=macos] .tabbtn{background:rgba(255,255,255,.55);border-color:rgba(255,255,255,.7);border-radius:10px;color:#6e6e73;box-shadow:none;text-shadow:none;backdrop-filter:blur(8px)}
+body[data-theme=macos] .tabbtn:hover{color:#1d1d1f;border-color:rgba(10,132,255,.4)}
+body[data-theme=macos] .tabbtn.active{background:#fff;color:#0a84ff;border-color:rgba(10,132,255,.35);box-shadow:0 2px 10px rgba(10,132,255,.16);text-shadow:none}
+body[data-theme=macos] .shead{color:#0a84ff;text-shadow:none;border-left-color:#0a84ff}
+body[data-theme=macos] kbd{border-color:rgba(140,150,170,.4)}
 </style>
 </head>
 <body>
 <div id="bgfx"></div><div id="scanfx"></div><div id="sweepline"></div>
 
 <header>
+  <div id="macdots"><i class="r"></i><i class="y"></i><i class="g"></i></div>
   <div id="logo">
     <svg width="30" height="30" viewBox="0 0 32 32"><polygon points="16,2 29,9 29,23 16,30 3,23 3,9" fill="none" stroke="#00e5ff" stroke-width="1.6"/><polygon points="16,9 16,15 12,15 17,24 17,17 21,17" fill="#00e5ff"/></svg>
     <div><div class="t1">FNIRSI DPS-150</div><div class="t2">数控电源控制台</div></div>
@@ -285,25 +576,22 @@ kbd{font-family:var(--mono);border:1px solid var(--line);padding:0 5px;font-size
     <button class="btn primary" id="connbtn">联机</button>
     <div id="statuspill" class=""><span class="led"></span><span id="statustxt">未连接</span></div>
     <label class="swrow" style="margin-left:8px"><span class="switch" id="demosw"><i></i></span>演示模式</label>
+    <select id="themesel" title="切换界面主题">
+      <option value="tech">科技主题</option>
+      <option value="modern">现代主题</option>
+      <option value="macos">macOS主题</option>
+    </select>
   </div>
   <div id="clock">----/--/-- --:--:--</div>
 </header>
 
 <div id="body">
-<nav>
-  <button data-v="dash" class="active"><svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 13l4-4"/><path d="M9 3h6"/></svg>仪表盘</button>
-  <button data-v="chart"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M6 15l4-6 4 3 5-8"/></svg>曲线记录</button>
-  <button data-v="scan"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/></svg>电压/电流扫描</button>
-  <button data-v="auto"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/><path d="M8 4v4M14 10v4M19 16v4"/></svg>自动序列</button>
-  <button data-v="prot"><svg viewBox="0 0 24 24"><path d="M12 3l8 4v6c0 4-3.5 7-8 8-4.5-1-8-4-8-8V7z"/><path d="M12 8v5"/><circle cx="12" cy="16" r=".6" fill="currentColor"/></svg>保护 / 设备</button>
-  <button data-v="fw"><svg viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>固件升级</button>
-  <div class="spacer"></div>
-  <div class="ver">PROTOCOL v2<br>RE-ENG</div>
-</nav>
 
 <main>
   <!-- ============ 仪表盘 ============ -->
   <section class="view active" id="view-dash">
+    <div class="dashgrid">
+    <div class="maincol">
     <div class="panel" id="noserial" data-t="兼容性提示">
       当前浏览器不支持 <b>Web Serial</b>。请使用 <b>Microsoft Edge</b> 或 <b>Chrome</b> 打开本页面；
       或先开启右上角 <b>演示模式</b> 体验全部功能。
@@ -317,54 +605,49 @@ kbd{font-family:var(--mono);border:1px solid var(--line);padding:0 5px;font-size
         <canvas id="gA"></canvas>
         <div class="g-lbl">输出电流</div><div class="g-sub">设定 <b id="gAset">--</b></div>
       </div>
-      <div class="panel" data-t="OUTPUT CONTROL 输出控制">
+      <div class="panel" id="outctl" data-t="OUTPUT CONTROL 输出控制">
         <div id="outbig">输出 关</div>
-        <div class="badges" style="justify-content:center">
+        <div class="badges">
           <span class="badge dim" id="bMode">--</span>
           <span class="badge dim" id="bStatus">--</span>
+          <span class="badge" id="bVin" title="输入电压 0xC0">输入 --</span>
           <span class="badge" id="bTemp">-- ℃</span>
           <span class="badge" id="bP">-- W</span>
         </div>
-      </div>
-    </div>
-    <div class="grid" id="dash-mid">
-      <div class="panel setter" data-t="VOLTAGE SET 电压设置" id="setV">
-        <div class="row">
-          <button class="step" data-d="-1">−1</button><button class="step" data-d="-0.1">−.1</button><button class="step" data-d="-0.01">−.01</button>
-          <input type="number" step="0.01" min="0" value="0.00">
-          <button class="step" data-d="0.01">+.01</button><button class="step" data-d="0.1">+.1</button><button class="step" data-d="1">+1</button>
-          <button class="btn go">设定</button>
+        <div class="setter ctlset" id="setV">
+          <div class="row">
+            <span class="clbl">电压 V</span>
+            <input type="number" step="0.01" min="0" value="0.00">
+            <button class="btn go">设定</button>
+            <span class="steps">
+              <button class="step" data-d="-1">−1</button><button class="step" data-d="-0.1">−.1</button><button class="step" data-d="-0.01">−.01</button>
+              <button class="step" data-d="0.01">+.01</button><button class="step" data-d="0.1">+.1</button><button class="step" data-d="1">+1</button>
+            </span>
+          </div>
+          <div class="cap">上限 <b class="maxv">--</b>　输入后按 <b>Enter</b> 下发 · 步进按钮立即下发</div>
         </div>
-        <div class="cap">上限 <b class="maxv">--</b>　输入后按 <b>Enter</b> 下发 · 步进按钮立即下发</div>
-      </div>
-      <div class="panel setter" data-t="CURRENT SET 电流设置" id="setA">
-        <div class="row">
-          <button class="step" data-d="-1">−1</button><button class="step" data-d="-0.1">−.1</button><button class="step" data-d="-0.01">−.001</button>
-          <input type="number" step="0.001" min="0" value="0.000">
-          <button class="step" data-d="0.01">+.001</button><button class="step" data-d="0.1">+.1</button><button class="step" data-d="1">+1</button>
-          <button class="btn go">设定</button>
+        <div class="setter ctlset" id="setA">
+          <div class="row">
+            <span class="clbl">电流 A</span>
+            <input type="number" step="0.001" min="0" value="0.000">
+            <button class="btn go">设定</button>
+            <span class="steps">
+              <button class="step" data-d="-1">−1</button><button class="step" data-d="-0.1">−.1</button><button class="step" data-d="-0.01">−.01</button>
+              <button class="step" data-d="0.01">+.001</button><button class="step" data-d="0.1">+.1</button><button class="step" data-d="1">+1</button>
+            </span>
+          </div>
+          <div class="cap">上限 <b class="maxv">--</b>　输入后按 <b>Enter</b> 下发 · 步进按钮立即下发</div>
         </div>
-        <div class="cap">上限 <b class="maxv">--</b>　输入后按 <b>Enter</b> 下发 · 步进按钮立即下发</div>
       </div>
-      <div class="panel" data-t="METER 计量">
+      <div class="panel metercol" id="meterpanel" data-t="METER 计量">
         <div class="stat3">
           <div><div class="v" id="mAh">0.000</div><div class="l">容量 Ah</div></div>
           <div><div class="v" id="mWh">0.000</div><div class="l">能量 Wh</div></div>
           <div><div class="v" id="mP">0.00</div><div class="l">功率 W</div></div>
         </div>
-        <div class="swrow" style="margin-bottom:10px"><span class="switch" id="meassw"><i></i></span>计量开关</div>
-        <div class="swrow">背光亮度<span id="briv">--</span><input type="range" id="brirange" min="1" max="100" value="50"></div>
       </div>
     </div>
-    <div class="panel" data-t="EXPRESS DATA 快捷数据组">
-      <div id="groups"></div>
-      <div class="hint">『启用』= 将该组电压/电流设为当前输出设定；『保存』= 把输入框中的值写入设备该组寄存器（子命令 C5…D0）。</div>
-    </div>
-  </section>
-
-  <!-- ============ 曲线 ============ -->
-  <section class="view" id="view-chart">
-    <div class="panel" data-t="REALTIME CURVE 实时曲线">
+    <div class="panel" data-t="REALTIME CURVE 曲线记录">
       <div id="chartwrap"><canvas id="chart"></canvas></div>
       <div id="chartctl">
         <button class="btn green" id="recbtn">● 开始记录</button>
@@ -372,67 +655,66 @@ kbd{font-family:var(--mono);border:1px solid var(--line);padding:0 5px;font-size
         <button class="btn mini" id="csvbtn">导出 CSV</button>
         <span class="runinfo">采样点 <b id="ptsn">0</b>　已记录 <b id="recn">0</b></span>
         <div class="legend">
-          <span><i style="background:#00e5ff"></i>电压 V</span>
-          <span><i style="background:#ffb300"></i>电流 A</span>
+          <span><i class="sw-v"></i>电压 V</span>
+          <span><i class="sw-a"></i>电流 A</span>
         </div>
       </div>
       <div class="hint">曲线始终实时滚动；仅勾选『开始记录』期间的数据会计入 CSV 导出。左轴电压 / 右轴电流，量程跟随设备上限。</div>
     </div>
-  </section>
+    </div><!-- /maincol -->
 
-  <!-- ============ 扫描 ============ -->
-  <section class="view" id="view-scan">
-    <div class="grid two">
-      <div class="panel" data-t="VOLTAGE SCAN 电压扫描">
-        <div class="frm">
-          <label>恒流值 A</label><input type="number" id="svA" step="0.01" min="0" value="1.000">
-          <label>起始 V</label><input type="number" id="svV0" step="0.01" value="1.00">
-          <label>停止 V</label><input type="number" id="svV1" step="0.01" value="10.00">
-          <label>步进 V</label><input type="number" id="svSt" step="0.01" value="0.50">
-          <label>间隔 s</label><input type="number" id="svDly" step="0.5" min="0.2" value="1.0">
+    <aside class="sidecol">
+      <div class="panel" id="ctrlpanel" data-t="CONTROL 设备控制">
+        <div class="tabbar">
+          <button class="tabbtn active" data-tp="grp">快捷数据</button>
+          <button class="tabbtn" data-tp="scan">V/I 扫描</button>
+          <button class="tabbtn" data-tp="auto">自动序列</button>
+          <button class="tabbtn" data-tp="prot">保护·设备</button>
+          <button class="tabbtn" data-tp="fw">固件升级</button>
         </div>
-        <div class="swrow" style="margin-top:10px"><span class="switch checked" id="svOut"><i></i></span>开始时自动开启输出</div>
-        <div style="display:flex;gap:8px;margin-top:10px">
-          <button class="btn primary" id="svRun">▶ 运行</button>
-          <button class="btn danger" id="svStop" disabled>■ 停止</button>
-        </div>
-        <div class="prog"><i id="svBar"></i></div>
-        <div class="runinfo">当前 <b id="svCur">--</b>　状态 <b id="svStat">就绪</b></div>
-      </div>
-      <div class="panel" data-t="CURRENT SCAN 电流扫描">
-        <div class="frm">
-          <label>恒压值 V</label><input type="number" id="saV" step="0.01" min="0" value="5.00">
-          <label>起始 A</label><input type="number" id="saA0" step="0.01" value="0.100">
-          <label>停止 A</label><input type="number" id="saA1" step="0.01" value="3.000">
-          <label>步进 A</label><input type="number" id="saSt" step="0.01" value="0.100">
-          <label>间隔 s</label><input type="number" id="saDly" step="0.5" min="0.2" value="1.0">
-        </div>
-        <div class="swrow" style="margin-top:10px"><span class="switch checked" id="saOut"><i></i></span>开始时自动开启输出</div>
-        <div style="display:flex;gap:8px;margin-top:10px">
-          <button class="btn primary" id="saRun">▶ 运行</button>
-          <button class="btn danger" id="saStop" disabled>■ 停止</button>
-        </div>
-        <div class="prog"><i id="saBar"></i></div>
-        <div class="runinfo">当前 <b id="saCur">--</b>　状态 <b id="saStat">就绪</b></div>
-      </div>
-    </div>
-    <div class="panel" style="margin-top:14px" data-t="NOTE 说明">
-      <div class="hint">扫描由上位机按设定间隔依次下发 电压/电流设定 命令（与原版上位机逻辑一致）。步进为 0 时按单步执行；停止值 &lt; 起始值将自动修正为 起始值+0.01。<b>扫描运行期间请勿断开连接。</b></div>
-    </div>
-  </section>
 
-  <!-- ============ 自动序列 ============ -->
-  <section class="view" id="view-auto">
-    <div class="grid two auto-two">
-      <div class="panel" data-t="SEQUENCE TABLE 步序表">
-        <table id="autotbl">
-          <thead><tr><th style="width:52px">序号</th><th>电压 V</th><th>电流 A</th><th>延时 s</th></tr></thead>
-          <tbody></tbody>
-        </table>
-        <div class="hint">表格自动保存在本机浏览器中（对应原版 config.json 的 configTableDatas）。</div>
-      </div>
-      <div>
-        <div class="panel" data-t="RUN CONFIG 运行参数">
+        <div class="tp active" id="tp-grp">
+          <div id="groups" style="margin-top:8px"></div>
+          <div class="hint">点击卡片 = 应用该组电压/电流到输出设定；『存』= 把当前上方电压/电流设定写入设备该组寄存器（子命令 C5…D0）。</div>
+        </div>
+
+        <div class="tp" id="tp-scan">
+          <div class="shead">VOLTAGE SCAN 电压扫描</div>
+          <div class="frm">
+            <label>恒流值 A</label><input type="number" id="svA" step="0.01" min="0" value="1.000">
+            <label>起始 V</label><input type="number" id="svV0" step="0.01" value="1.00">
+            <label>停止 V</label><input type="number" id="svV1" step="0.01" value="10.00">
+            <label>步进 V</label><input type="number" id="svSt" step="0.01" value="0.50">
+            <label>间隔 s</label><input type="number" id="svDly" step="0.5" min="0.2" value="1.0">
+          </div>
+          <div class="swrow" style="margin-top:10px"><span class="switch checked" id="svOut"><i></i></span>开始时自动开启输出</div>
+          <div style="display:flex;gap:8px;margin-top:10px">
+            <button class="btn primary" id="svRun">▶ 运行</button>
+            <button class="btn danger" id="svStop" disabled>■ 停止</button>
+          </div>
+          <div class="prog"><i id="svBar"></i></div>
+          <div class="runinfo">当前 <b id="svCur">--</b>　状态 <b id="svStat">就绪</b></div>
+
+          <div class="shead">CURRENT SCAN 电流扫描</div>
+          <div class="frm">
+            <label>恒压值 V</label><input type="number" id="saV" step="0.01" min="0" value="5.00">
+            <label>起始 A</label><input type="number" id="saA0" step="0.01" value="0.100">
+            <label>停止 A</label><input type="number" id="saA1" step="0.01" value="3.000">
+            <label>步进 A</label><input type="number" id="saSt" step="0.01" value="0.100">
+            <label>间隔 s</label><input type="number" id="saDly" step="0.5" min="0.2" value="1.0">
+          </div>
+          <div class="swrow" style="margin-top:10px"><span class="switch checked" id="saOut"><i></i></span>开始时自动开启输出</div>
+          <div style="display:flex;gap:8px;margin-top:10px">
+            <button class="btn primary" id="saRun">▶ 运行</button>
+            <button class="btn danger" id="saStop" disabled>■ 停止</button>
+          </div>
+          <div class="prog"><i id="saBar"></i></div>
+          <div class="runinfo">当前 <b id="saCur">--</b>　状态 <b id="saStat">就绪</b></div>
+          <div class="hint">扫描按设定间隔依次下发 电压/电流设定 命令（与原版上位机逻辑一致）。步进为 0 时按单步执行；停止值 &lt; 起始值将自动修正为 起始值+0.01。<b>扫描运行期间请勿断开连接。</b></div>
+        </div>
+
+        <div class="tp" id="tp-auto">
+          <div class="shead">RUN CONFIG 运行参数</div>
           <div class="frm">
             <label>循环次数</label><input type="number" id="auCyc" min="1" value="1">
             <label>开始序号</label><input type="number" id="auS0" min="1" max="10" value="1">
@@ -448,56 +730,64 @@ kbd{font-family:var(--mono);border:1px solid var(--line);padding:0 5px;font-size
           </div>
           <div class="prog"><i id="auBar"></i></div>
           <div class="runinfo">当前序号 <b id="auCurSn">--</b>　当前循环 <b id="auCurCyc">--</b>　状态 <b id="auSt">就绪</b></div>
-        </div>
-      </div>
-    </div>
-  </section>
 
-  <!-- ============ 保护 / 设备 ============ -->
-  <section class="view" id="view-prot">
-    <div class="grid two">
-      <div class="panel" data-t="PROTECTION 保护阈值">
-        <div class="frm" id="protfrm">
-          <label>过压 OVP V</label><input type="number" step="0.1" data-k="ovp"><span class="hint" style="grid-column:2">≤ <b class="pmax" data-k="ovp">--</b></span>
-          <label>过流 OCP A</label><input type="number" step="0.01" data-k="ocp"><span class="hint" style="grid-column:2">≤ <b class="pmax" data-k="ocp">--</b></span>
-          <label>过温 OTP ℃</label><input type="number" step="1" data-k="otp"><span class="hint" style="grid-column:2">≤ <b class="pmax" data-k="otp">--</b></span>
-          <label>欠压 LVP V</label><input type="number" step="0.1" data-k="lvp"><span class="hint" style="grid-column:2">≤ <b class="pmax" data-k="lvp">--</b></span>
-          <label>过功 OPP W</label><input type="number" step="0.1" data-k="opp"><span class="hint" style="grid-column:2">≤ <b class="pmax" data-k="opp">--</b></span>
+          <div class="shead">SEQUENCE TABLE 步序表</div>
+          <table id="autotbl" style="margin-top:6px">
+            <thead><tr><th style="width:52px">序号</th><th>电压 V</th><th>电流 A</th><th>延时 s</th></tr></thead>
+            <tbody></tbody>
+          </table>
+          <div class="hint">表格自动保存在本机浏览器中（对应原版 config.json 的 configTableDatas）。</div>
         </div>
-        <div style="display:flex;gap:8px;margin-top:14px">
-          <button class="btn primary" id="protWr">写入全部阈值</button>
-          <button class="btn mini" id="protRd">从设备读取</button>
-        </div>
-        <div class="hint">阈值保存在设备内（子命令 D1–D5），写入后立即生效。设备回报的当前值会自动回填输入框。</div>
-      </div>
-      <div class="panel" data-t="DEVICE INFO 设备信息">
-        <div class="infogrid">
-          <span>产品型号</span><b id="iModel">--</b>
-          <span>固件版本</span><b id="iFw">--</b>
-          <span>设备地址</span><b id="iAddr">--</b>
-          <span>通讯速率</span><b id="iBaud">--</b>
-          <span>电压上限</span><b id="iVmax">--</b>
-          <span>电流上限</span><b id="iAmax">--</b>
-          <span>按键锁定</span><b id="iLock">--</b>
-        </div>
-        <div style="display:flex;gap:8px;margin-top:14px">
-          <button class="btn mini" id="infoRd">刷新设备参数</button>
-        </div>
-        <div class="hint">『按键锁定』为设备回报的原始字节（FF 应答 @97）。型号 / 固件 / 地址 为设备字符串应答。</div>
-      </div>
-    </div>
-  </section>
 
-  <!-- ============ 固件 ============ -->
-  <section class="view" id="view-fw">
-    <div class="panel" data-t="FIRMWARE 固件升级" style="max-width:640px">
-      <p style="line-height:1.9;font-size:13px">
-        点击 <b style="color:var(--red)">BOOT</b> 按钮后，设备将进入固件升级模式。<br>
-        随后把固件文件放入 <b>U 盘</b>，升级完成后<b>重启上位机</b>并重新联机。
-      </p>
-      <div style="margin-top:16px"><button class="btn danger" id="bootbtn" style="padding:10px 40px;font-size:15px">进入 BOOT 模式</button></div>
-      <div class="hint">命令帧：<b>F1 C0 00 01 01</b>（与原版上位机一致）。该操作会中断当前输出，请确认负载安全后再执行。</div>
-    </div>
+        <div class="tp" id="tp-prot">
+          <div class="shead">PROTECTION 保护阈值</div>
+          <div class="frm" id="protfrm">
+            <label>过压 OVP V</label><input type="number" step="0.1" data-k="ovp"><span class="hint" style="grid-column:2;margin-top:0">≤ <b class="pmax" data-k="ovp">--</b></span>
+            <label>过流 OCP A</label><input type="number" step="0.01" data-k="ocp"><span class="hint" style="grid-column:2;margin-top:0">≤ <b class="pmax" data-k="ocp">--</b></span>
+            <label>过温 OTP ℃</label><input type="number" step="1" data-k="otp"><span class="hint" style="grid-column:2;margin-top:0">≤ <b class="pmax" data-k="otp">--</b></span>
+            <label>欠压 LVP V</label><input type="number" step="0.1" data-k="lvp"><span class="hint" style="grid-column:2;margin-top:0">≤ <b class="pmax" data-k="lvp">--</b></span>
+            <label>过功 OPP W</label><input type="number" step="0.1" data-k="opp"><span class="hint" style="grid-column:2;margin-top:0">≤ <b class="pmax" data-k="opp">--</b></span>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:14px">
+            <button class="btn primary" id="protWr">写入全部阈值</button>
+            <button class="btn mini" id="protRd">从设备读取</button>
+          </div>
+          <div class="hint">阈值保存在设备内（子命令 D1–D5），写入后立即生效。设备回报的当前值会自动回填输入框。</div>
+
+          <div class="shead">DISPLAY &amp; SOUND 显示与声音</div>
+          <div class="msw" style="margin-top:10px">
+            <div class="swrow"><span class="switch" id="meassw"><i></i></span><span class="mlbl">计量开关</span></div>
+            <div class="swrow"><span class="mlbl">背光亮度</span><span id="briv" class="mval">--</span><input type="range" id="brirange" min="1" max="14" value="8"></div>
+            <div class="swrow"><span class="mlbl">音　量</span><span id="volv" class="mval">--</span><input type="range" id="volrange" min="0" max="14" value="8"></div>
+          </div>
+
+          <div class="shead">DEVICE INFO 设备信息</div>
+          <div class="infogrid" style="margin-top:10px">
+            <span>产品型号</span><b id="iModel">--</b>
+            <span>硬件版本</span><b id="iHw">--</b>
+            <span>软件版本</span><b id="iFw">--</b>
+            <span>设备地址</span><b id="iAddr">--</b>
+            <span>通讯速率</span><b id="iBaud">--</b>
+            <span>电压上限</span><b id="iVmax">--</b>
+            <span>电流上限</span><b id="iAmax">--</b>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:14px">
+            <button class="btn mini" id="infoRd">刷新设备参数</button>
+          </div>
+          <div class="hint">『按键锁定』为设备回报的原始字节（FF 应答 @97）。型号 / 固件 / 地址 为设备字符串应答。</div>
+        </div>
+
+        <div class="tp" id="tp-fw">
+          <p style="line-height:1.9;font-size:13px;margin-top:8px">
+            点击 <b style="color:var(--red)">BOOT</b> 按钮后，设备将进入固件升级模式。<br>
+            随后把固件文件放入 <b>U 盘</b>，升级完成后<b>重启上位机</b>并重新联机。
+          </p>
+          <div style="margin-top:16px"><button class="btn danger" id="bootbtn" style="padding:10px 40px;font-size:15px">进入 BOOT 模式</button></div>
+          <div class="hint">命令帧：<b>F1 C0 00 01 01</b>（与原版上位机一致）。该操作会中断当前输出，请确认负载安全后再执行。</div>
+        </div>
+      </div>
+    </aside>
+    </div><!-- /dashgrid -->
   </section>
 </main>
 </div>
@@ -508,7 +798,19 @@ kbd{font-family:var(--mono);border:1px solid var(--line);padding:0 5px;font-size
     <label><input type="checkbox" id="fTx" checked>TX</label>
     <label><input type="checkbox" id="fRx" checked>RX</label>
     <button class="btn mini" id="conclr">清空</button>
-    <span style="margin-left:auto;cursor:pointer" id="confold">▲ 折叠</span>
+    <div id="social">
+      <span class="slbl">关注作者</span>
+      <a class="dy" href="https://v.douyin.com/C9HPBB3nRQ8/" target="_blank" rel="noopener noreferrer" title="抖音">
+        <svg viewBox="0 0 24 24"><path d="M16.6 3c.3 1.9 1.4 3.1 3.4 3.3v3c-1.3-.1-2.5-.5-3.6-1.2v5.6c0 3.5-2.4 5.8-5.6 5.8-2.9 0-5.3-2.3-5.3-5.2 0-3 2.5-5.3 5.7-5.1v3.1c-1.5-.4-2.8.4-2.8 1.9 0 1.3 1.1 2.2 2.4 2.2 1.5 0 2.5-1.1 2.5-2.9V3h3.3z"/></svg>抖音
+      </a>
+      <a class="bili" href="https://b23.tv/LbPhbHL" target="_blank" rel="noopener noreferrer" title="哔哩哔哩">
+        <svg viewBox="0 0 24 24"><path d="M7.5 2.7c.4-.3 1-.3 1.3.1L10.6 5h2.8l1.8-2.2c.3-.4.9-.5 1.3-.1.4.3.5.9.1 1.3L15.2 5h2.2C19.4 5 21 6.6 21 8.6v7.8c0 2-1.6 3.6-3.6 3.6H6.6C4.6 20 3 18.4 3 16.4V8.6C3 6.6 4.6 5 6.6 5h2.2L7.4 3.9c-.4-.3-.4-.9 0-1.2zM6.6 7C5.7 7 5 7.7 5 8.6v7.8c0 .9.7 1.6 1.6 1.6h10.8c.9 0 1.6-.7 1.6-1.6V8.6c0-.9-.7-1.6-1.6-1.6H6.6zm2 3.4c.7 0 1.2.5 1.2 1.2v.8c0 .7-.5 1.2-1.2 1.2s-1.2-.5-1.2-1.2v-.8c0-.7.5-1.2 1.2-1.2zm6.8 0c.7 0 1.2.5 1.2 1.2v.8c0 .7-.5 1.2-1.2 1.2s-1.2-.5-1.2-1.2v-.8c0-.7.5-1.2 1.2-1.2z"/></svg>哔哩哔哩
+      </a>
+      <a class="xhs" href="https://xhslink.cn/o/AYfQzZ3QbDe" target="_blank" rel="noopener noreferrer" title="小红书">
+        <svg viewBox="0 0 24 24"><path d="M5 3h14a3 3 0 0 1 3 3v12a3 3 0 0 1-3 3H5a3 3 0 0 1-3-3V6a3 3 0 0 1 3-3zm2.6 5.4a1.3 1.3 0 0 0 0 2.6h8.8a1.3 1.3 0 0 0 0-2.6H7.6zm0 4.6a1.3 1.3 0 0 0 0 2.6h5.8a1.3 1.3 0 0 0 0-2.6H7.6z"/></svg>小红书
+      </a>
+    </div>
+    <span style="cursor:pointer" id="confold">▲ 折叠</span>
   </div>
   <div id="conlog"></div>
 </footer>
@@ -540,29 +842,32 @@ function frame(cls,sub,payload){
   out.set(payload,4);out[4+len]=sum;return out;
 }
 const CMD={
-  LINK_ON :()=>frame(0xC1,0x00,[0x00]),
-  LINK_OFF:()=>frame(0xC1,0x00,[0x01]),
+  LINK_ON :()=>frame(0xC1,0x00,[0x01]),   // 0x01=设备上线（官方文档v1.6）
+  LINK_OFF:()=>frame(0xC1,0x00,[0x00]),   // 0x00=设备掉线，须在关串口前发送
   BOOT    :()=>frame(0xC0,0x00,[0x01]),
-  GET_ALL :()=>frame(0xA1,0xFF,[]),
-  GET_VSET:()=>frame(0xA1,0xC0,[]),
-  GET_MEAS:()=>frame(0xA1,0xC3,[]),
-  GET_MODEL:()=>frame(0xA1,0xDE,[]),
-  GET_ADDR:()=>frame(0xA1,0xDF,[]),
-  GET_FW  :()=>frame(0xA1,0xE0,[]),
-  GET_LINK:()=>frame(0xA1,0xE1,[]),
-  SET_BAUD:i=>frame(0xB0,0x00,[i]),          // i = 1..5
+  GET_ALL :()=>frame(0xA1,0xFF,[]),        // 0xFF 全量帧未收录进用户版文档，沿用官方上位机实测线格式(len=0)
+  GET_VIN :()=>frame(0xA1,0xC0,[0]),       // 读取请求格式：数据长度01+内容00（官方文档示例）
+  GET_VSET:()=>frame(0xA1,0xC1,[0]),
+  GET_ASET:()=>frame(0xA1,0xC2,[0]),
+  GET_MEAS:()=>frame(0xA1,0xC3,[0]),
+  GET_MODEL:()=>frame(0xA1,0xDE,[0]),      // 产品型号(字符串，文档注明需单独获取)
+  GET_HW  :()=>frame(0xA1,0xDF,[0]),       // 硬件版本(字符串)
+  GET_FW  :()=>frame(0xA1,0xE0,[0]),       // 软件版本(字符串)
+  GET_LINK:()=>frame(0xA1,0xE1,[0]),       // 设备地址(uint8，兼作链路探测)
+  SET_BAUD:i=>frame(0xB0,0x00,[i]),        // 未收录进文档，沿用官方上位机行为
   SET_V   :v=>frame(0xB1,0xC1,f32b(v)),
   SET_A   :v=>frame(0xB1,0xC2,f32b(v)),
-  SET_BRIGHT:v=>frame(0xB1,0xD6,[v&0xFF]),
-  MEAS_ON :()=>frame(0xB1,0xD8,[0x00]),
-  MEAS_OFF:()=>frame(0xB1,0xD8,[0x01]),
+  SET_BRIGHT:v=>frame(0xB1,0xD6,[Math.max(1,Math.min(14,Math.round(v)))]),  // 14级 0x01~0x0E
+  SET_VOL :v=>frame(0xB1,0xD7,[Math.max(0,Math.min(14,Math.round(v)))]),    // 15级 0x00~0x0E，0=静音
+  MEAS_ON :()=>frame(0xB1,0xD8,[0x01]),   // 0x01=开启计量（官方文档）
+  MEAS_OFF:()=>frame(0xB1,0xD8,[0x00]),   // 0x00=关闭计量
   OUT_ON  :()=>frame(0xB1,0xDB,[0x01]),
   OUT_OFF :()=>frame(0xB1,0xDB,[0x00]),
   GRP_V:(i,v)=>frame(0xB1,0xC3+2*i,f32b(v)), // i=1..6 → C5,C7,…CF
   GRP_A:(i,v)=>frame(0xB1,0xC4+2*i,f32b(v)), //        C6,C8,…D0
   PROT:{ovp:v=>frame(0xB1,0xD1,f32b(v)), ocp:v=>frame(0xB1,0xD2,f32b(v)),
-        otp:v=>frame(0xB1,0xD3,f32b(v)), lvp:v=>frame(0xB1,0xD4,f32b(v)),
-        opp:v=>frame(0xB1,0xD5,f32b(v))},
+        opp:v=>frame(0xB1,0xD3,f32b(v)), otp:v=>frame(0xB1,0xD4,f32b(v)),
+        lvp:v=>frame(0xB1,0xD5,f32b(v))},
 };
 const hex=u8=>[...u8].map(b=>b.toString(16).toUpperCase().padStart(2,'0')).join(' ');
 let gbk;try{gbk=new TextDecoder('gbk')}catch(e){gbk=new TextDecoder('latin1')}
@@ -575,7 +880,9 @@ class Parser{
     let b=this.buf.length?concatU8(this.buf,u8):u8;
     let i=0;
     for(;;){
-      const idx=b.indexOf(0xF1,i);
+      // 设备端包头 0xF0，上位机 0xF1（演示模拟器），两者都接受
+      let idx=-1;
+      for(let j=i;j+4<=b.length;j++){if(b[j]===0xF0||b[j]===0xF1){idx=j;break}}
       if(idx<0||idx+4>b.length){b=idx>=0?b.slice(idx):new Uint8Array(0);break}
       const sub=b[idx+2],len=b[idx+3],total=5+len;
       if(idx+total>b.length){b=b.slice(idx);break}
@@ -597,10 +904,10 @@ function concatU8(a,b){const o=new Uint8Array(a.length+b.length);o.set(a);o.set(
    ================================================================ */
 const dev={
   linked:false,connecting:false,demo:false,
-  vset:0,aset:0,vout:0,iout:0,pout:0,temp:0,
-  status:0,mode:0,output:false,measOn:false,bright:50,
-  ah:0,wh:0,vmax:24,amax:5,baudIdx:0,keyByte:255,
-  model:'',fw:'',addr:'',
+  vset:0,aset:0,vout:0,iout:0,pout:0,temp:0,vin:0,
+  status:0,mode:0,output:false,measOn:false,bright:8,vol:8,
+  ah:0,wh:0,vmax:24,amax:5,baudIdx:0,addr:0,
+  model:'',hw:'',fw:'',
   groups:Array.from({length:6},()=>({v:0,a:0})),
   prot:{ovp:0,ocp:0,otp:0,lvp:0,opp:0},
   protMax:{ovp:0,ocp:0,otp:0,lvp:0,opp:0},
@@ -647,67 +954,85 @@ async function rawSend(u8){
 }
 
 /* ---------- 演示模式虚拟设备 ---------- */
+function rframe(cls,sub,payload){  // 设备端应答包头 0xF0（官方文档）
+  payload=payload||[];
+  const len=payload.length;let sum=(sub+len)&0xFF;
+  for(const b of payload)sum=(sum+b)&0xFF;
+  const out=new Uint8Array(5+len);
+  out[0]=0xF0;out[1]=cls;out[2]=sub;out[3]=len;
+  out.set(payload,4);out[4+len]=sum;return out;
+}
 const sim={
-  t:null,vset:5,aset:1,vout:0,iout:0,pout:0,temp:27,ah:0,wh:0,
-  output:false,mode:0,status:0,bright:50,measOn:false,load:9.5,
+  t:null,vset:5,aset:1,vout:0,iout:0,pout:0,temp:27,ah:0,wh:0,vin:12,
+  output:false,mode:1,status:0,bright:8,vol:8,measOn:false,load:9.5,addrByte:5,
   groups:Array.from({length:6},(_,i)=>({v:(i+1)*3,a:(i+1)*0.5})),
   prot:{ovp:26,ocp:5.5,otp:85,lvp:1,opp:155},
 };
-function simResp(cls,sub,payload){setTimeout(()=>{const f=frame(cls,sub,payload);clog('rx','RX '+hex(f));parser.feed(f)},60+Math.random()*120)}
+function simResp(cls,sub,payload){setTimeout(()=>{const f=rframe(cls,sub,payload);clog('rx','RX '+hex(f));parser.feed(f)},60+Math.random()*120)}
 function demoFeed(u8){
   const cls=u8[1],sub=u8[2],len=u8[3],p=u8.slice(4,4+len);
   switch(true){
-    case cls===0xC1&&p[0]===0: simResp(0xA1,0xE1,[sim.bright]); break;
-    case cls===0xC1&&p[0]===1: simStop(); break;
+    case cls===0xC1&&p[0]===1: simResp(0xA1,0xE1,[sim.addrByte]); break;   // 上线→回设备地址
+    case cls===0xC1&&p[0]===0: simStop(); break;                            // 掉线
     case cls===0xA1&&sub===0xDE: simResp(0xA1,0xDE,[...'DPS-150'].map(c=>c.charCodeAt(0))); break;
+    case cls===0xA1&&sub===0xDF: simResp(0xA1,0xDF,[...'HV1.0'].map(c=>c.charCodeAt(0))); break;
     case cls===0xA1&&sub===0xE0: simResp(0xA1,0xE0,[...'V2.1.6'].map(c=>c.charCodeAt(0))); break;
-    case cls===0xA1&&sub===0xDF: simResp(0xA1,0xDF,[...'FN-0042'].map(c=>c.charCodeAt(0))); break;
-    case cls===0xA1&&sub===0xE1: simResp(0xA1,0xE1,[sim.bright]); break;
-    case cls===0xA1&&sub===0xC0: simResp(0xA1,0xC0,f32b(sim.vset)); break;
+    case cls===0xA1&&sub===0xE1: simResp(0xA1,0xE1,[sim.addrByte]); break;
+    case cls===0xA1&&sub===0xC0: simResp(0xA1,0xC0,f32b(sim.vin)); break;
+    case cls===0xA1&&sub===0xC1: simResp(0xA1,0xC1,f32b(sim.vset)); break;
+    case cls===0xA1&&sub===0xC2: simResp(0xA1,0xC2,f32b(sim.aset)); break;
     case cls===0xA1&&sub===0xFF: simResp(0xA1,0xFF,simAll()); break;
-    case cls===0xB1&&sub===0xC1: sim.vset=b2f(p,0); simResp(0xA1,0xC0,f32b(sim.vset)); break;
-    case cls===0xB1&&sub===0xC2: sim.aset=b2f(p,0); simResp(0xA1,0xC1,f32b(sim.aset)); break;
-    case cls===0xB1&&sub===0xD6: sim.bright=p[0]; simResp(0xA1,0xE1,[sim.bright]); break;
-    case cls===0xB1&&sub===0xD8: sim.measOn=p[0]===0; break;
+    case cls===0xB1&&sub===0xC1: sim.vset=b2f(p,0); simResp(0xA1,0xC1,f32b(sim.vset)); break;
+    case cls===0xB1&&sub===0xC2: sim.aset=b2f(p,0); simResp(0xA1,0xC2,f32b(sim.aset)); break;
+    case cls===0xB1&&sub===0xD6: sim.bright=p[0]; simResp(0xA1,0xD6,[sim.bright]); break;
+    case cls===0xB1&&sub===0xD7: sim.vol=p[0]; simResp(0xA1,0xD7,[sim.vol]); break;
+    case cls===0xB1&&sub===0xD8: sim.measOn=p[0]===1; simResp(0xA1,0xD8,[p[0]]); break;
     case cls===0xB1&&sub===0xDB: sim.output=p[0]===1; simResp(0xA1,0xDB,[p[0]]); break;
     case cls===0xB1&&sub>=0xC5&&sub<=0xD0:{
       const g=sub-0xC5,i=g>>1,isA=g&1;
-      sim.groups[i][isA?'a':'v']=b2f(p,0); break;}
+      sim.groups[i][isA?'a':'v']=b2f(p,0);
+      simResp(0xA1,sub,f32b(sim.groups[i][isA?'a':'v'])); break;}
     case cls===0xB1&&sub>=0xD1&&sub<=0xD5:{
-      sim.prot[['ovp','ocp','otp','lvp','opp'][sub-0xD1]]=b2f(p,0); break;}
+      const k=['ovp','ocp','opp','otp','lvp'][sub-0xD1];
+      sim.prot[k]=b2f(p,0);
+      simResp(0xA1,sub,f32b(sim.prot[k])); break;}
     case cls===0xC0: toast('演示设备已进入 BOOT 模式（模拟）','warn'); break;
   }
 }
 function simAll(){
   const p=new Uint8Array(139),dv=new DataView(p.buffer);
   const put=(o,v)=>dv.setFloat32(o,v,true);
-  put(0,sim.vset);put(4,sim.vset);put(8,sim.aset);
+  put(0,sim.vin);put(4,sim.vset);put(8,sim.aset);
   put(12,sim.vout);put(16,sim.iout);put(20,sim.pout);put(24,sim.temp);
   sim.groups.forEach((g,i)=>{put(28+i*8,g.v);put(32+i*8,g.a)});
-  put(76,sim.prot.ovp);put(80,sim.prot.ocp);put(84,sim.prot.otp);put(88,sim.prot.lvp);put(92,sim.prot.opp);
-  p[96]=sim.bright;p[97]=0;p[98]=sim.measOn?0:1;
+  put(76,sim.prot.ovp);put(80,sim.prot.ocp);put(84,sim.prot.opp);put(88,sim.prot.otp);put(92,sim.prot.lvp);
+  p[96]=sim.bright;p[97]=sim.vol;p[98]=sim.measOn?1:0;
   put(99,sim.ah);put(103,sim.wh);
   p[107]=sim.output?1:0;p[108]=sim.status;p[109]=sim.mode;
   put(111,31);put(115,5.5);
-  put(119,31);put(123,5.5);put(127,99);put(131,15);put(135,160);
+  put(119,31);put(123,5.5);put(127,160);put(131,99);put(135,15);
   return p;
 }
 function simTick(){
   const dt=.8;
   sim.load+= (Math.random()-.5)*.6; sim.load=Math.max(4,Math.min(40,sim.load));
+  sim.vin+=(12-sim.vin)*.1+(Math.random()-.5)*.06;
   if(sim.output){
     sim.vout+= (sim.vset-sim.vout)*.6 + (Math.random()-.5)*.02;
     let want=sim.vout/sim.load;
-    if(want>=sim.aset){want=sim.aset;sim.mode=1}else sim.mode=0;
+    if(want>=sim.aset){want=sim.aset;sim.mode=0}else sim.mode=1;   // 0=CC 1=CV（官方文档）
     sim.iout+=(want-sim.iout)*.5+(Math.random()-.5)*.008;
     sim.iout=Math.max(0,sim.iout);
     sim.pout=sim.vout*sim.iout;
     if(sim.measOn){sim.ah+=sim.iout*dt/3600;sim.wh+=sim.pout*dt/3600}
-  }else{sim.vout*= .8;sim.iout*=.8;sim.pout=sim.vout*sim.iout;sim.mode=0}
+  }else{sim.vout*= .8;sim.iout*=.8;sim.pout=sim.vout*sim.iout;sim.mode=1}
   sim.temp+=((27+sim.pout*.9)-sim.temp)*.05+(Math.random()-.5)*.15;
   if(sim.vset>31){sim.status=1;sim.output=false}else if(sim.status===1&&sim.vset<=31)sim.status=0;
   simResp(0xA1,0xC3,concatU8(f32b(Math.max(0,sim.vout)),concatU8(f32b(sim.iout),f32b(sim.pout))));
   simResp(0xA1,0xC4,f32b(sim.temp));
+  simResp(0xA1,0xDD,[sim.mode]);                       // 输出模式主动上报（官方文档：设备主动推送）
+  if(sim._lastOut!==sim.output){sim._lastOut=sim.output;simResp(0xA1,0xDB,[sim.output?1:0])}
+  if(sim._lastSt!==sim.status){sim._lastSt=sim.status;simResp(0xA1,0xDC,[sim.status])}
   if(sim.measOn&&Math.random()<.12){
     Math.random()<.5?simResp(0xA1,0xD9,f32b(sim.ah)):simResp(0xA1,0xDA,f32b(sim.wh));
   }
@@ -735,8 +1060,8 @@ async function doConnect(){
     dev.baudIdx=BAUDS.indexOf(baud)+1;
     await rawSend(CMD.SET_BAUD(dev.baudIdx));
     await rawSend(CMD.GET_MODEL());
+    await rawSend(CMD.GET_HW());
     await rawSend(CMD.GET_FW());
-    await rawSend(CMD.GET_ADDR());
     await rawSend(CMD.GET_ALL());
     toast('连接成功 · '+(dev.demo?'演示设备':baud+'bps'),'ok');
     clog('in','—— 已联机 ———');
@@ -783,20 +1108,35 @@ function onUnplug(){
 }
 function onFrame(f){
   const cls=f[1],sub=f[2],len=f[3],p=f.slice(4,4+len);
-  if(sub===0xE1){dev.bright=p[0];if(!dev.linked)dev.linked=true}
+  if(sub===0xE1){dev.addr=p[0];if(!dev.linked)dev.linked=true}   // 0xE1=设备地址，兼作链路应答
   switch(sub){
-    case 0xC0: dev.vset=b2f(p,0); break;
-    case 0xC1: dev.aset=b2f(p,0); break;
+    case 0xC0: dev.vin=b2f(p,0); break;                          // 输入电压（官方文档）
+    case 0xC1: dev.vset=b2f(p,0); break;                         // 电压设定
+    case 0xC2: dev.aset=b2f(p,0); break;                         // 电流设定
     case 0xC3: dev.vout=b2f(p,0);dev.iout=b2f(p,4);dev.pout=b2f(p,8);chartPush(); break;
     case 0xC4: dev.temp=b2f(p,0); break;
+    case 0xC5: case 0xC6: case 0xC7: case 0xC8: case 0xC9: case 0xCA:
+    case 0xCB: case 0xCC: case 0xCD: case 0xCE: case 0xCF: case 0xD0: {
+      const gi=(sub-0xC5)>>1;
+      if((sub-0xC5)&1)dev.groups[gi].a=b2f(p,0); else dev.groups[gi].v=b2f(p,0);
+      break;
+    }
+    case 0xD1: dev.prot.ovp=b2f(p,0); break;
+    case 0xD2: dev.prot.ocp=b2f(p,0); break;
+    case 0xD3: dev.prot.opp=b2f(p,0); break;                     // D3=过功率 OPP（官方文档）
+    case 0xD4: dev.prot.otp=b2f(p,0); break;                     // D4=过温 OTP
+    case 0xD5: dev.prot.lvp=b2f(p,0); break;                     // D5=欠压 LVP
+    case 0xD6: dev.bright=p[0]; break;
+    case 0xD7: dev.vol=p[0]; break;
+    case 0xD8: dev.measOn=p[0]===1; break;                       // 0x01=开启计量
     case 0xD9: dev.ah=b2f(p,0); break;
     case 0xDA: dev.wh=b2f(p,0); break;
     case 0xDB: dev.output=p[0]===1; break;
     case 0xDC: if(dev.status!==p[0]&&p[0]!==0)toast(STATUS_TXT[p[0]]||'状态 '+(p[0]),'err');dev.status=p[0]; break;
-    case 0xDD: dev.mode=p[0]; break;
-    case 0xDE: dev.model=decStr(p); break;
-    case 0xDF: dev.addr=decStr(p); break;
-    case 0xE0: dev.fw=decStr(p); break;
+    case 0xDD: dev.mode=p[0]; break;                             // 0x00=CC 0x01=CV（官方文档）
+    case 0xDE: dev.model=decStr(p); break;                       // 产品型号
+    case 0xDF: dev.hw=decStr(p); break;                          // 硬件版本
+    case 0xE0: dev.fw=decStr(p); break;                          // 软件版本
     case 0xE2: dev.vmax=b2f(p,0); break;
     case 0xE3: dev.amax=b2f(p,0); break;
     case 0xFF: parseAll(p); break;
@@ -805,19 +1145,23 @@ function onFrame(f){
 }
 function parseAll(p){
   if(p.length<139)return;
-  dev.vset=b2f(p,0);dev.aset=b2f(p,8);
+  // 0xFF 全量帧按数据项代码表顺序排布（C0,C1,C2,C3×3,C4,C5…D0,D1…D5,D6,D7,D8,D9,DA,DB,DC,DD,E2,E3,E4…E8）
+  dev.vin=b2f(p,0);
+  dev.vset=b2f(p,4);
+  dev.aset=b2f(p,8);
   dev.vout=b2f(p,12);dev.iout=b2f(p,16);dev.pout=b2f(p,20);dev.temp=b2f(p,24);
   for(let i=0;i<6;i++){dev.groups[i].v=b2f(p,28+i*8);dev.groups[i].a=b2f(p,32+i*8)}
-  dev.prot.ovp=b2f(p,76);dev.prot.ocp=b2f(p,80);dev.prot.otp=b2f(p,84);
-  dev.prot.lvp=b2f(p,88);dev.prot.opp=b2f(p,92);
-  dev.bright=p[96];dev.keyByte=p[97];dev.measOn=p[98]===0;
+  dev.prot.ovp=b2f(p,76);dev.prot.ocp=b2f(p,80);dev.prot.opp=b2f(p,84);
+  dev.prot.otp=b2f(p,88);dev.prot.lvp=b2f(p,92);
+  dev.bright=Math.min(14,Math.max(1,p[96]));dev.vol=Math.min(14,Math.max(0,p[97]));
+  dev.measOn=p[98]===1;
   dev.ah=b2f(p,99);dev.wh=b2f(p,103);
   dev.output=p[107]===1;dev.status=p[108];dev.mode=p[109];
   dev.vmax=b2f(p,111);dev.amax=b2f(p,115);
   if(gaugeV.max!==dev.vmax&&dev.vmax>0){gaugeV.max=dev.vmax;gaugeV.fit()}
   if(gaugeA.max!==dev.amax&&dev.amax>0){gaugeA.max=dev.amax;gaugeA.fit()}
-  dev.protMax.ovp=b2f(p,119);dev.protMax.ocp=b2f(p,123);dev.protMax.otp=b2f(p,127);
-  dev.protMax.lvp=b2f(p,131);dev.protMax.opp=b2f(p,135);
+  dev.protMax.ovp=b2f(p,119);dev.protMax.ocp=b2f(p,123);dev.protMax.opp=b2f(p,127);
+  dev.protMax.otp=b2f(p,131);dev.protMax.lvp=b2f(p,135);
   chartPush();
 }
 async function send(fn,...a){if(!dev.linked&&!dev.demo)return;try{await rawSend(fn(...a))}catch(e){clog('er','发送失败 '+e.message)}}
@@ -844,18 +1188,21 @@ function render(){
   $('#gVset').textContent=F2(dev.vset)+' V';
   $('#gAset').textContent=F3(dev.aset)+' A';
   // badges
-  $('#bMode').textContent=dev.mode?'恒流 CC':'恒压 CV';
-  $('#bMode').className='badge '+(dev.mode?'warn':'ok');
+  $('#bMode').textContent=dev.mode?'恒压 CV':'恒流 CC';
+  $('#bMode').className='badge '+(dev.mode?'ok':'warn');
   const st=dev.linked?dev.status:-1;
   $('#bStatus').textContent=st<0?'--':STATUS_TXT[st]||('--');
   $('#bStatus').className='badge '+(st<0?'dim':STATUS_CLS[st]);
+  $('#bVin').textContent=dev.linked?('输入 '+F2(dev.vin)+' V'):'-- V';
   $('#bTemp').textContent=Math.round(dev.temp)+' ℃';
   $('#bP').textContent=F2(dev.pout)+' W';
   // meters
   $('#mAh').textContent=F3(dev.ah);$('#mWh').textContent=F3(dev.wh);$('#mP').textContent=F2(dev.pout);
   $('#meassw').classList.toggle('checked',dev.measOn);
   $('#briv').textContent=dev.bright;
-  if(!$('#brirange').matches(':active'))$('#brirange').value=dev.bright;
+  if(!$('#brirange').matches(':active'))$('#brirange').value=Math.min(14,Math.max(1,dev.bright));
+  $('#volv').textContent=dev.vol;
+  if(!$('#volrange').matches(':active'))$('#volrange').value=dev.vol;
   // setters
   const sv=$('#setV input'),sa=$('#setA input');
   if(document.activeElement!==sv)sv.value=F2(dev.vset);
@@ -870,12 +1217,12 @@ function render(){
   $$('.pmax').forEach(e=>{e.textContent=({ovp:dev.protMax.ovp,ocp:dev.protMax.ocp,otp:dev.protMax.otp,lvp:dev.protMax.lvp,opp:dev.protMax.opp})[e.dataset.k]||'--'});
   // info
   $('#iModel').textContent=dev.model||'--';
+  $('#iHw').textContent=dev.hw||'--';
   $('#iFw').textContent=dev.fw||'--';
-  $('#iAddr').textContent=dev.addr||'--';
+  $('#iAddr').textContent=dev.addr>0?dev.addr:'--';
   $('#iBaud').textContent=dev.baudIdx?BAUDS[dev.baudIdx-1]+' bps':'--';
   $('#iVmax').textContent=F2(dev.vmax)+' V';
   $('#iAmax').textContent=F3(dev.amax)+' A';
-  $('#iLock').textContent=dev.keyByte===255?'--':(dev.keyByte?'已锁定':'未锁定');
   $('#bootbtn').disabled=!dev.linked;
 }
 
@@ -884,35 +1231,35 @@ function renderGroups(){
   const wrap=$('#groups');
   if(!wrap.children.length){
     for(let i=1;i<=6;i++){
-      const d=document.createElement('div');d.className='gcard';
-      d.innerHTML=`<div class="gn">数据组 ${i}</div>
-        <div class="gv">V <input type="number" step="0.01" data-g="${i}" data-va="v" style="width:64px;font-size:12px"></div>
-        <div class="gv a">A <input type="number" step="0.001" data-g="${i}" data-va="a" style="width:64px;font-size:12px"></div>
-        <div class="gbtns"><button class="btn" data-act="save" data-g="${i}">保存</button><button class="btn green" data-act="use" data-g="${i}">启用</button></div>`;
+      const d=document.createElement('div');d.className='gcard';d.dataset.g=i;
+      d.title='点击应用该组到输出设定';
+      d.innerHTML=`<div class="gtop"><span class="gm">M${i}</span><button class="gsave" data-act="save" data-g="${i}" title="把当前输出设定写入该组">存</button></div>
+        <div class="gv">--<small>V</small></div>
+        <div class="ga">-- A</div>`;
       wrap.appendChild(d);
     }
   }
   dev.groups.forEach((g,i)=>{
     const w=wrap.children[i];
-    const iv=w.querySelector('[data-va=v]'),ia=w.querySelector('[data-va=a]');
-    if(document.activeElement!==iv)iv.value=F2(g.v);
-    if(document.activeElement!==ia)ia.value=F3(g.a);
+    w.querySelector('.gv').innerHTML=F2(g.v)+'<small>V</small>';
+    w.querySelector('.ga').textContent=F3(g.a)+' A';
   });
 }
 $('#groups').addEventListener('click',async e=>{
-  const b=e.target.closest('button');if(!b||!dev.linked&&!dev.demo)return;
-  const i=+b.dataset.g,w=b.closest('.gcard');
-  const v=+w.querySelector('[data-va=v]').value,a=+w.querySelector('[data-va=a]').value;
-  if(b.dataset.act==='save'){
-    await send(CMD.GRP_V,i,v);await sleep(60);await send(CMD.GRP_A,i,a);
+  const card=e.target.closest('.gcard');if(!card)return;
+  if(!dev.linked&&!dev.demo)return toast('未连接设备','warn');
+  const i=+card.dataset.g;
+  if(e.target.closest('[data-act=save]')){
+    await send(CMD.GRP_V,i,dev.vset);await sleep(60);await send(CMD.GRP_A,i,dev.aset);
     await sleep(150);
     await send(CMD.GET_ALL);        // 回读，防止 UI 回弹
-    toast(`数据组${i} 已写入设备`,'ok');
-  }else{
-    await send(CMD.SET_V,v);await sleep(60);await send(CMD.SET_A,a);
-    dev.vset=v;dev.aset=a;render();
-    toast(`已启用数据组${i}（V=${F2(v)} A=${F3(a)}）`,'ok');
+    toast(`当前设定（${F2(dev.vset)}V / ${F3(dev.aset)}A）已存入数据组${i}`,'ok');
+    return;
   }
+  const g=dev.groups[i-1];
+  await send(CMD.SET_V,g.v);await sleep(60);await send(CMD.SET_A,g.a);
+  dev.vset=g.v;dev.aset=g.a;render();
+  toast(`已启用数据组${i}（V=${F2(g.v)} A=${F3(g.a)}）`,'ok');
 });
 
 /* ================================================================
@@ -922,9 +1269,26 @@ class Gauge{
   constructor(cv,{max=10,color='#00e5ff',fmt=F2,unit='V',label=''}){
     this.cv=cv;this.ctx=cv.getContext('2d');
     this.max=max;this.color=color;this.fmt=fmt;this.unit=unit;this.label=label;
+    this.color2='#00ffa3';this.mark='#ffb300';this.txt='#eaffff';this.sub='#5f8ba1';
+    this.track='rgba(20,50,75,.9)';this.tickHi='rgba(0,229,255,.5)';this.tickLo='rgba(0,229,255,.22)';
+    this.glow=16;
     this.cur=0;this.tgt=0;this.setv=0;this.on=false;
     new ResizeObserver(()=>this.fit()).observe(cv.parentElement);
-    this.fit();requestAnimationFrame(()=>this.anim());
+    this.retint();this.fit();requestAnimationFrame(()=>this.anim());
+  }
+  retint(){
+    const cs=getComputedStyle(document.body);
+    const v=k=>cs.getPropertyValue(k).trim();
+    this.color=v('--gauge-v')||this.color;
+    this.color2=v('--gauge-v2')||this.color2;
+    this.mark=v('--gauge-mark')||this.mark;
+    this.txt=v('--gauge-txt')||this.txt;
+    this.sub=v('--gauge-sub')||this.sub;
+    this.track=v('--gauge-track')||this.track;
+    this.tickHi=v('--gauge-tick-hi')||this.tickHi;
+    this.tickLo=v('--gauge-tick-lo')||this.tickLo;
+    this.glow={modern:0,macos:6}[document.body.dataset.theme]??16;
+    this.draw();
   }
   fit(){
     const p=this.cv.parentElement,cs=getComputedStyle(p);
@@ -949,20 +1313,20 @@ class Gauge{
     ctx.clearRect(0,0,w,h);
     // track
     ctx.lineWidth=R*.13;ctx.lineCap='round';
-    ctx.strokeStyle='rgba(20,50,75,.9)';
+    ctx.strokeStyle=this.track;
     ctx.beginPath();ctx.arc(cx,cy,R,a0,a1);ctx.stroke();
     // ticks
     ctx.lineWidth=1;
     for(let i=0;i<=10;i++){
       const a=a0+(a1-a0)*i/10,big=i%5===0;
       const r1=R*1.02,r2=R*(big?1.12:1.07);
-      ctx.strokeStyle=big?'rgba(0,229,255,.5)':'rgba(0,229,255,.22)';
+      ctx.strokeStyle=big?this.tickHi:this.tickLo;
       ctx.beginPath();
       ctx.moveTo(cx+Math.cos(a)*r1,cy+Math.sin(a)*r1);
       ctx.lineTo(cx+Math.cos(a)*r2,cy+Math.sin(a)*r2);
       ctx.stroke();
       if(big){
-        ctx.fillStyle='rgba(95,139,161,.9)';ctx.font='10px Consolas';ctx.textAlign='center';
+        ctx.fillStyle=this.sub;ctx.font='10px Consolas';ctx.textAlign='center';
         const vr=this.max*i/10;
         ctx.fillText(vr>=10?Math.round(vr):+vr.toFixed(1),cx+Math.cos(a)*R*1.22,cy+Math.sin(a)*R*1.22+3);
       }
@@ -971,16 +1335,16 @@ class Gauge{
     const t=this.on?Math.min(1,this.cur/this.max):0;
     if(t>0.003){
       const grad=ctx.createLinearGradient(cx-R,cy,cx+R,cy);
-      grad.addColorStop(0,this.color);grad.addColorStop(1,'#00ffa3');
+      grad.addColorStop(0,this.color);grad.addColorStop(1,this.color2);
       ctx.strokeStyle=grad;ctx.lineWidth=R*.13;
-      ctx.shadowColor=this.color;ctx.shadowBlur=16;
+      ctx.shadowColor=this.color;ctx.shadowBlur=this.glow;
       ctx.beginPath();ctx.arc(cx,cy,R,a0,a0+(a1-a0)*t);ctx.stroke();
       ctx.shadowBlur=0;
     }
     // set marker
     if(this.on&&this.setv>0){
       const a=a0+(a1-a0)*Math.min(1,this.setv/this.max);
-      ctx.strokeStyle='#ffb300';ctx.lineWidth=2.5;
+      ctx.strokeStyle=this.mark;ctx.lineWidth=2.5;
       ctx.beginPath();
       ctx.moveTo(cx+Math.cos(a)*R*.86,cy+Math.sin(a)*R*.86);
       ctx.lineTo(cx+Math.cos(a)*R*1.0,cy+Math.sin(a)*R*1.0);
@@ -988,12 +1352,12 @@ class Gauge{
     }
     // center number
     ctx.textAlign='center';
-    ctx.fillStyle='#eaffff';
+    ctx.fillStyle=this.txt;
     ctx.font='700 34px Consolas';
-    ctx.shadowColor=this.color;ctx.shadowBlur=14;
+    ctx.shadowColor=this.color;ctx.shadowBlur=this.glow?14:0;
     ctx.fillText(this.on?this.fmt(this.cur):'--',cx,cy+2);
     ctx.shadowBlur=0;
-    ctx.fillStyle='#5f8ba1';ctx.font='12px Consolas';
+    ctx.fillStyle=this.sub;ctx.font='12px Consolas';
     ctx.fillText(this.unit,cx,cy+20);
   }
 }
@@ -1009,12 +1373,17 @@ function chartPush(){
   const t=Date.now();
   ring.push({t,v:dev.vout,a:dev.iout});
   if(ring.length>RING_MAX)ring.shift();
-  if(recording)recRows.push([t,dev.vout,dev.iout,dev.pout,dev.output?1:0,dev.mode?'CC':'CV',STATUS_TXT[dev.status]||'']);
+  if(recording)recRows.push([t,dev.vout,dev.iout,dev.pout,dev.output?1:0,dev.mode?'CV':'CC',STATUS_TXT[dev.status]||'']);
   $('#ptsn').textContent=ring.length;$('#recn').textContent=recRows.length;
 }
 const SPAN=180000; // 3 min window
 function drawChart(){
   const cv=$('#chart'),wrap=$('#chartwrap');
+  const cs=getComputedStyle(document.body),cv1=k=>cs.getPropertyValue(k).trim()||'';
+  const colV=cv1('--chart-v')||'#00e5ff',colA=cv1('--chart-a')||'#ffb300';
+  const cGrid=cv1('--chart-grid')||'rgba(0,229,255,.08)';
+  const cTxt=cv1('--chart-txt')||'#4a718c',cTxt2=cv1('--chart-txt2')||'#8a6d1f',cDim=cv1('--chart-dim')||'#31536a';
+  const glowOn=document.body.dataset.theme!=='modern';   // macOS 保留轻辉光
   const dpr=devicePixelRatio||1;
   const w=wrap.clientWidth,h=wrap.clientHeight;
   if(cv.width!==w*dpr||cv.height!==h*dpr){cv.width=w*dpr;cv.height=h*dpr}
@@ -1025,13 +1394,13 @@ function drawChart(){
   const vmax=Math.max(31,dev.vmax)*1.05,amax=Math.max(5.5,dev.amax)*1.05;
   const now=Date.now();
   // grid
-  ctx.font='10px Consolas';ctx.fillStyle='#4a718c';
-  ctx.strokeStyle='rgba(0,229,255,.08)';ctx.lineWidth=1;
+  ctx.font='10px Consolas';ctx.fillStyle=cTxt;
+  ctx.strokeStyle=cGrid;ctx.lineWidth=1;
   for(let i=0;i<=6;i++){
     const y=T+ph*i/6;
     ctx.beginPath();ctx.moveTo(L,y);ctx.lineTo(L+pw,y);ctx.stroke();
     ctx.textAlign='right';ctx.fillText(F2(vmax*(1-i/6)),L-6,y+3);
-    ctx.textAlign='left';ctx.fillStyle='#8a6d1f';ctx.fillText(F2(amax*(1-i/6)),L+pw+8,y+3);ctx.fillStyle='#4a718c';
+    ctx.textAlign='left';ctx.fillStyle=cTxt2;ctx.fillText(F2(amax*(1-i/6)),L+pw+8,y+3);ctx.fillStyle=cTxt;
   }
   for(let i=0;i<=6;i++){
     const x=L+pw*i/6;
@@ -1039,10 +1408,10 @@ function drawChart(){
     const tt=new Date(now-SPAN+i*SPAN/6);
     ctx.textAlign='center';ctx.fillText(('0'+tt.getMinutes()).slice(-2)+':'+('0'+tt.getSeconds()).slice(-2),x,h-8);
   }
-  if(ring.length<2){ctx.fillStyle='#31536a';ctx.textAlign='center';ctx.font='13px Microsoft YaHei';ctx.fillText('等待数据…',L+pw/2,T+ph/2);return}
+  if(ring.length<2){ctx.fillStyle=cDim;ctx.textAlign='center';ctx.font='13px Microsoft YaHei';ctx.fillText('等待数据…',L+pw/2,T+ph/2);return}
   const line=(key,scale,color)=>{
     ctx.strokeStyle=color;ctx.lineWidth=1.8;
-    ctx.shadowColor=color;ctx.shadowBlur=6;
+    ctx.shadowColor=color;ctx.shadowBlur=glowOn?6:0;
     ctx.beginPath();let started=false;
     for(const d of ring){
       const x=L+pw*(1-(now-d.t)/SPAN);
@@ -1052,10 +1421,10 @@ function drawChart(){
     }
     ctx.stroke();ctx.shadowBlur=0;
   };
-  line('v',vmax,'#00e5ff');
-  line('a',amax,'#ffb300');
+  line('v',vmax,colV);
+  line('a',amax,colA);
 }
-setInterval(()=>{if($('#view-chart').classList.contains('active'))drawChart()},200);
+setInterval(()=>{if($('#view-dash').classList.contains('active'))drawChart()},200);
 
 $('#recbtn').onclick=()=>{
   recording=!recording;
@@ -1219,12 +1588,11 @@ $('#auStep').onclick=async()=>{
 /* ================================================================
    控件绑定
    ================================================================ */
-// 导航
-$$('nav button').forEach(b=>b.onclick=()=>{
-  $$('nav button').forEach(x=>x.classList.remove('active'));b.classList.add('active');
-  $$('.view').forEach(v=>v.classList.remove('active'));
-  $('#view-'+b.dataset.v).classList.add('active');
-  if(b.dataset.v==='chart')drawChart();
+// 右侧设备控制面板 —— 选项卡
+$$('.tabbtn').forEach(b=>b.onclick=()=>{
+  $$('.tabbtn').forEach(x=>x.classList.remove('active'));b.classList.add('active');
+  $$('.tp').forEach(t=>t.classList.remove('active'));
+  $('#tp-'+b.dataset.tp).classList.add('active');
 });
 // 连接
 $('#connbtn').onclick=doConnect;
@@ -1290,6 +1658,12 @@ $('#brirange').oninput=e=>{
   $('#briv').textContent=e.target.value;
   clearTimeout(briT);
   briT=setTimeout(()=>send(CMD.SET_BRIGHT,+e.target.value),180);
+};
+let volT=null;
+$('#volrange').oninput=e=>{
+  $('#volv').textContent=e.target.value;
+  clearTimeout(volT);
+  volT=setTimeout(()=>send(CMD.SET_VOL,+e.target.value),180);
 };
 // 保护
 $('#protWr').onclick=async()=>{
@@ -1364,6 +1738,17 @@ setInterval(()=>{
   const d=new Date(),p=n=>('0'+n).slice(-2);
   $('#clock').textContent=`${d.getFullYear()}/${p(d.getMonth()+1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
 },500);
+// 主题切换（下拉菜单，选中项即当前主题）
+const THEMES=['tech','modern','macos'];
+function applyTheme(t){
+  if(!THEMES.includes(t))t='tech';
+  document.body.dataset.theme=t;
+  try{localStorage.setItem('dps150.theme',t)}catch(e){}
+  $('#themesel').value=t;
+  gaugeV.retint();gaugeA.retint();
+  drawChart();
+}
+$('#themesel').onchange=e=>applyTheme(e.target.value);
 
 /* ================================================================
    初始化
@@ -1372,8 +1757,9 @@ if(!('serial'in navigator))$('#noserial').style.display='block';
 navigator.serial&&navigator.serial.addEventListener('disconnect',e=>{if(dev.linked&&!dev.demo)onUnplug()});
 refreshPorts();
 autoTblRender();
+applyTheme((()=>{try{return localStorage.getItem('dps150.theme')}catch(e){return null}})()||'tech');
 renderConn();render();drawChart();
-clog('in','FNIRSI DPS-150 控制台已启动 · 协议逆向自官方上位机 v2.0.2.3');
+clog('in','FNIRSI DPS-150 控制台已启动 · 协议按官方通讯文档 v1.6 校验对齐');
 window.dev=dev;window.CMD=CMD;      // 调试入口
 clog('in','提示：Chrome / Edge 下点击「联机」选择串口；无设备时可开启右上角「演示模式」');
 window.addEventListener('resize',()=>drawChart());
